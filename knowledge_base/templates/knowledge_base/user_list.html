@@ -1,0 +1,105 @@
+{% extends "knowledge_base/base.html" %}
+{% block title %}All Users — ACT InnerCircle{% endblock %}
+{% block nav_queue %}active{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div>
+    <h1 class="section-title">All Users</h1>
+    <p class="section-subtitle">{{ total }} registered employee{{ total|pluralize }} on the platform</p>
+  </div>
+</div>
+
+<!-- Search bar -->
+<div class="card" style="padding:16px;margin-bottom:20px;">
+  <form method="get" style="display:flex;gap:10px;">
+    <input type="text" name="q" value="{{ query }}"
+           class="form-control" placeholder="Search by email, name, or department…">
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if query %}
+    <a href="{% url 'knowledge_base:user_list' %}" class="btn btn-secondary">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Users table -->
+<div class="card" style="overflow:hidden;">
+  <table style="width:100%;border-collapse:collapse;font-size:14px;">
+    <thead>
+      <tr style="background:var(--bg);border-bottom:1px solid var(--border);">
+        <th style="padding:12px 20px;text-align:left;font-weight:600;color:var(--ink-3);font-size:12px;letter-spacing:.5px;text-transform:uppercase;">User</th>
+        <th style="padding:12px 16px;text-align:left;font-weight:600;color:var(--ink-3);font-size:12px;letter-spacing:.5px;text-transform:uppercase;">Email</th>
+        <th style="padding:12px 16px;text-align:left;font-weight:600;color:var(--ink-3);font-size:12px;letter-spacing:.5px;text-transform:uppercase;">Department</th>
+        <th style="padding:12px 16px;text-align:left;font-weight:600;color:var(--ink-3);font-size:12px;letter-spacing:.5px;text-transform:uppercase;">Role</th>
+        <th style="padding:12px 16px;text-align:left;font-weight:600;color:var(--ink-3);font-size:12px;letter-spacing:.5px;text-transform:uppercase;">Posts</th>
+        <th style="padding:12px 16px;text-align:left;font-weight:600;color:var(--ink-3);font-size:12px;letter-spacing:.5px;text-transform:uppercase;">Joined</th>
+        <th style="padding:12px 16px;text-align:left;font-weight:600;color:var(--ink-3);font-size:12px;letter-spacing:.5px;text-transform:uppercase;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr style="border-bottom:1px solid var(--border);transition:background .15s;"
+          onmouseover="this.style.background='var(--bg)'"
+          onmouseout="this.style.background=''">
+
+        <!-- Name + avatar -->
+        <td style="padding:14px 20px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="post-author-avatar" style="width:34px;height:34px;font-size:13px;flex-shrink:0;">
+              {% if u.avatar %}<img src="{{ u.avatar.url }}" alt="">
+              {% else %}{{ u.first_name|first|upper }}{% endif %}
+            </div>
+            <div>
+              <div style="font-weight:500;color:var(--ink);">{{ u.get_full_name|default:"—" }}</div>
+            </div>
+          </div>
+        </td>
+
+        <!-- Email -->
+        <td style="padding:14px 16px;">
+          <a href="mailto:{{ u.email }}" style="color:var(--red);font-weight:500;">{{ u.email }}</a>
+        </td>
+
+        <!-- Department -->
+        <td style="padding:14px 16px;color:var(--ink-3);">
+          {{ u.department|default:"—" }}
+        </td>
+
+        <!-- Role -->
+        <td style="padding:14px 16px;">
+          <span class="badge {% if u.is_admin_user %}badge-red{% else %}badge-blue{% endif %}">
+            {{ u.get_role_display }}
+          </span>
+        </td>
+
+        <!-- Post count -->
+        <td style="padding:14px 16px;color:var(--ink-2);font-weight:500;">
+          {{ u.published_post_count }}
+        </td>
+
+        <!-- Joined date -->
+        <td style="padding:14px 16px;color:var(--ink-4);font-size:13px;">
+          {{ u.date_joined|date:"d M Y" }}
+        </td>
+
+        <!-- Active status -->
+        <td style="padding:14px 16px;">
+          {% if u.is_active %}
+          <span class="badge badge-green">● Active</span>
+          {% else %}
+          <span class="badge badge-gray">○ Inactive</span>
+          {% endif %}
+        </td>
+
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" style="padding:40px;text-align:center;color:var(--ink-4);">
+          No users found{% if query %} for "{{ query }}"{% endif %}.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "knowledge_base/base.html" %}
+{% block title %}Approval Queue — ACT InnerCircle{% endblock %}
+{% block nav_queue %}active{% endblock %}
+
+{% block right_sidebar %}
+<div class="widget">
+  <div class="widget-title">📋 Queue Info</div>
+  <div style="text-align:center;padding:16px 0;">
+    <div style="font-size:42px;font-weight:700;color:var(--red);">{{ pending_posts.count }}</div>
+    <div style="font-size:13px;color:var(--ink-4);margin-top:4px;">Articles awaiting review</div>
+  </div>
+  <div style="font-size:13px;color:var(--ink-3);background:var(--bg);border-radius:var(--radius-md);padding:12px;line-height:1.6;">
+    Review each post carefully. Approved posts are published instantly and visible to all employees.
+  </div>
+</div>
+
+<div class="widget">
+  <div class="widget-title">⚡ Quick Actions</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <a href="{% url 'knowledge_base:post_list' %}" class="btn btn-secondary btn-sm" style="justify-content:center;">View Published Posts</a>
+   <a href="{% url 'admin:knowledge_base_post_changelist' %}" class="btn btn-secondary btn-sm">Manage in Admin Panel</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div>
+    <h1 class="section-title">Approval Queue</h1>
+    <p class="section-subtitle">Review and approve articles submitted by employees</p>
+  </div>
+  {% if pending_posts %}
+  <span class="badge badge-pending" style="font-size:14px;padding:6px 14px;">
+    {{ pending_posts.count }} pending
+  </span>
+  {% endif %}
+</div>
+
+{% for post in pending_posts %}
+<div class="card" style="margin-bottom:20px;overflow:hidden;">
+
+  <!-- Post header -->
+  <div style="padding:24px 24px 16px;">
+    <!-- Author + meta -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div class="post-author-avatar" style="width:40px;height:40px;font-size:15px;">
+        {% if post.author.avatar %}<img src="{{ post.author.avatar.url }}" alt="">
+        {% else %}{{ post.author.first_name|first|upper }}{% endif %}
+      </div>
+      <div>
+        <div style="font-weight:600;font-size:14px;">{{ post.author.get_full_name }}</div>
+        <div style="font-size:12px;color:var(--ink-4);">{{ post.author.department|default:"ACT Fibernet" }} · Submitted {{ post.updated_at|date:"d M, Y" }}</div>
+      </div>
+      <span class="badge badge-pending" style="margin-left:auto;">⏳ Pending Review</span>
+    </div>
+
+    <h2 style="font-size:19px;font-weight:600;margin-bottom:8px;line-height:1.35;">{{ post.title }}</h2>
+
+    {% if post.category %}
+    <span class="badge badge-blue" style="margin-bottom:12px;">{{ post.category.name }}</span>
+    {% endif %}
+
+    <!-- Excerpt -->
+    <p style="font-size:14px;color:var(--ink-3);line-height:1.65;margin-bottom:16px;">
+      {{ post.body|truncatewords:70 }}
+    </p>
+
+    <!-- AI Summary area -->
+    <div id="ai-area-{{ post.slug }}">
+      {% if post.ai_summary %}
+      <div class="ai-box">
+        <div class="ai-icon">🤖</div>
+        <div>
+          <div class="ai-label">AI Summary</div>
+          <div class="ai-text">{{ post.ai_summary }}</div>
+        </div>
+      </div>
+      {% else %}
+      <button onclick="generateSummary('{{ post.slug }}', this)"
+              style="display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#FFF8F0,#FFF0F5);
+                     border:1px dashed #F4C5C5;color:var(--red);padding:10px 16px;
+                     border-radius:var(--radius-md);cursor:pointer;font-size:13.5px;font-weight:500;
+                     transition:all .2s;" id="ai-btn-{{ post.slug }}">
+        🤖 Generate AI Summary
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Action bar -->
+  <div style="padding:16px 24px;background:var(--bg);border-top:1px solid var(--border);
+              display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+
+    <!-- Approve -->
+    <form method="post" action="{% url 'knowledge_base:post_approve' post.slug %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success">✅ Approve & Publish</button>
+    </form>
+
+    <!-- Reject with reason -->
+    <form method="post" action="{% url 'knowledge_base:post_reject' post.slug %}"
+          style="display:flex;gap:8px;align-items:center;flex:1;min-width:280px;">
+      {% csrf_token %}
+      <input name="reason" placeholder="Reason for rejection (optional)…"
+             class="form-control" style="flex:1;padding:9px 14px;">
+      <button type="submit" class="btn btn-secondary" style="border-color:var(--red);color:var(--red);">
+        ✕ Reject
+      </button>
+    </form>
+
+  </div>
+</div>
+{% empty %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-state-icon">🎉</div>
+    <div class="empty-state-title">All caught up!</div>
+    <div class="empty-state-text">There are no articles waiting for review. Check back later.</div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function generateSummary(slug, btn) {
+  btn.textContent = '⏳ Generating summary…';
+  btn.disabled = true;
+  btn.style.opacity = '.7';
+
+  try {
+    const resp = await fetch(`/api/posts/${slug}/generate-summary/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '',
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await resp.json();
+
+    if (data.success) {
+      const area = document.getElementById(`ai-area-${slug}`);
+      area.innerHTML = `
+        <div class="ai-box">
+          <div class="ai-icon">🤖</div>
+          <div>
+            <div class="ai-label">AI Summary</div>
+            <div class="ai-text">${data.ai_summary}</div>
+          </div>
+        </div>`;
+    } else {
+      btn.textContent = '❌ Failed — try again';
+      btn.disabled = false; btn.style.opacity = '1';
+    }
+  } catch {
+    btn.textContent = '❌ Error — try again';
+    btn.disabled = false; btn.style.opacity = '1';
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends "knowledge_base/base.html" %}
+{% block title %} {{ post.title }} — ACT InnerCircle {% endblock %}
+
+{% block extra_head %}
+<style>
+  .article-hero {
+    width: 100%;
+    height: 320px;
+    background: linear-gradient(135deg, var(--red-mid) 0%, #F0F0FF 100%);
+    background-size: cover;
+    background-position: center;
+    border-radius: var(--radius-lg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 84px; margin-bottom: 28px;
+    overflow: hidden;
+    color: white;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  .article-title {
+    font-family: var(--font-serif);
+    font-size: 34px; color: var(--ink);
+    line-height: 1.2; letter-spacing: -.5px;
+    margin-bottom: 16px;
+  }
+  .article-body {
+    font-size: 16px; line-height: 1.85;
+    color: var(--ink-2);
+    margin-bottom: 40px;
+  }
+  .article-body p { margin-bottom: 1.2em; }
+
+  /* New Attachment Styles */
+  .attachments-box, .attachments-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    margin: 32px 0;
+  }
+  .attachment-item {
+    margin-bottom: 15px;
+    display: block;
+  }
+  .media-player {
+    width: 100%;
+    border-radius: 8px;
+    margin-top: 10px;
+  }
+</style>
+{% endblock %}
+
+{% block right_sidebar %}
+<div class="widget">
+  <div class="widget-title">✍️ Author</div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0;text-align:center;">
+    <div class="nav-avatar" style="width:52px;height:52px;font-size:20px;">
+      {% if post.author.avatar %}
+      <img src="{{ post.author.avatar.url }}" alt="">
+      {% else %}{{ post.author.first_name|first|upper }}{% endif %}
+    </div>
+    <div>
+      <div style="font-weight:600;font-size:15px;">{{ post.author.get_full_name }}</div>
+      {% if post.author.department %}
+      <div style="font-size:12.5px;color:var(--ink-4);margin-top:2px;">{{ post.author.department }}</div>
+      {% endif %}
+    </div>
+    <div style="display:flex;gap:12px;margin-top:8px;">
+      <div style="text-align:center;">
+        <div style="font-weight:700;color:var(--red);">{{ post.author.posts.count }}</div>
+        <div style="font-size:11px;color:var(--ink-4);">Posts</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="widget">
+  <div class="widget-title">ℹ️ Article Info</div>
+  <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--ink-3);">
+    <div style="display:flex;justify-content:space-between;">
+      <span>Published</span>
+      <span style="color:var(--ink-2);font-weight:500;">{{ post.published_at|date:"d M Y" }}</span>
+    </div>
+    {% if post.category %}
+    <div style="display:flex;justify-content:space-between;">
+      <span>Category</span>
+      <span class="badge badge-blue">{{ post.category.name }}</span>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-4);margin-bottom:20px;">
+  <a href="{% url 'knowledge_base:post_list' %}" style="color:var(--ink-4);">Home</a>
+  <span>›</span>
+  {% if post.category %}
+  <a href="{% url 'knowledge_base:post_list' %}?category={{ post.category.slug }}" style="color:var(--ink-4);">{{ post.category.name }}</a>
+  <span>›</span>
+  {% endif %}
+  <span style="color:var(--ink-2);">{{ post.title|truncatechars:30 }}</span>
+</div>
+
+<article class="card" style="padding:40px;margin-bottom:24px;">
+
+  <div class="article-hero" {% if post.image_file %}style="background-image: url('{{ post.image_file.url }}');"{% endif %}>
+    {% if not post.image_file %}
+      {% if post.category %}{{ post.category.name|first }}{% else %}⚡{% endif %}
+    {% endif %}
+  </div>
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+    {% if post.category %}<span class="badge badge-blue">{{ post.category.name }}</span>{% endif %}
+    <span class="badge badge-green">✓ Verified Knowledge</span>
+  </div>
+
+  <h1 class="article-title">{{ post.title }}</h1>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:28px;">
+    <div class="post-author">
+      <div class="post-author-avatar" style="width:40px;height:40px;">
+        {% if post.author.avatar %}<img src="{{ post.author.avatar.url }}" alt="">
+        {% else %}{{ post.author.first_name|first|upper }}{% endif %}
+      </div>
+      <div>
+        <div style="font-weight:600;font-size:14px;">{{ post.author.get_full_name }}</div>
+        <div style="font-size:12.5px;color:var(--ink-4);">{{ post.published_at|date:"d M Y" }}</div>
+      </div>
+    </div>
+    <div class="post-stats">
+      <span class="post-stat">👍 {{ post.upvote_count }}</span>
+      <span class="post-stat">💬 {{ post.comments.count }}</span>
+    </div>
+  </div>
+
+  <div class="article-body">
+    {{ post.body|linebreaks }}
+  </div>
+
+  {% if post.image_file or post.audio_file or post.video_file or post.pdf_file or post.ppt_file or post.doc_file or post.external_url %}
+  <div class="attachments-block">
+    <h4>Attachments</h4>
+
+    {% if post.image_file %}
+      <img src="{{ post.image_file.url }}" alt="Post image" style="max-width:100%; border-radius:8px;">
+    {% endif %}
+
+    {% if post.audio_file %}
+      <div class="attachment-item">
+        <strong>Audio</strong>
+        <audio controls style="width:100%;">
+          <source src="{{ post.audio_file.url }}">
+          Your browser does not support audio.
+        </audio>
+      </div>
+    {% endif %}
+
+    {% if post.video_file %}
+      <div class="attachment-item">
+        <strong>Video</strong>
+        <video controls style="max-width:100%;">
+          <source src="{{ post.video_file.url }}">
+          Your browser does not support video.
+        </video>
+      </div>
+    {% endif %}
+
+    {% if post.pdf_file %}
+      <div class="attachment-item">
+        <a href="{{ post.pdf_file.url }}" target="_blank">📄 Download PDF</a>
+      </div>
+    {% endif %}
+
+    {% if post.ppt_file %}
+      <div class="attachment-item">
+        <a href="{{ post.ppt_file.url }}" target="_blank">📊 Download Presentation</a>
+      </div>
+    {% endif %}
+
+    {% if post.doc_file %}
+      <div class="attachment-item">
+        <a href="{{ post.doc_file.url }}" target="_blank">📝 Download Document</a>
+      </div>
+    {% endif %}
+
+    {% if post.external_url %}
+      <div class="attachment-item">
+        <a href="{{ post.external_url }}" target="_blank" rel="noopener">🔗 External Link</a>
+      </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if user.is_authenticated %}
+  <div style="margin-top:40px; padding-top:24px; border-top:1px solid var(--border); display:flex; align-items:center; gap:12px;">
+    <form method="post" action="{% url 'knowledge_base:post_upvote' post.slug %}">
+      {% csrf_token %}
+      <button type="submit" class="btn {% if has_upvoted %}btn-primary{% else %}btn-secondary{% endif %}">
+        {% if has_upvoted %}👍 Upvoted{% else %}👍 Upvote{% endif %} ({{ post.upvote_count }})
+      </button>
+    </form>
+    <span style="font-size:13.5px;color:var(--ink-4);">
+      {% if has_upvoted %}You found this helpful.{% else %}Was this guide helpful?{% endif %}
+    </span>
+  </div>
+  {% endif %}
+
+</article>
+
+<div class="card" style="padding:32px;">
+  <h2 style="font-size:18px;font-weight:600;margin-bottom:24px;">💬 Discussion</h2>
+  
+  {% for comment in comments %}
+  <div class="comment-bubble" style="margin-bottom:16px; background:var(--bg-1); border-radius:12px; padding:16px;">
+    <div class="post-author-avatar" style="width:32px;height:32px;flex-shrink:0;">
+      {% if comment.author.avatar %}<img src="{{ comment.author.avatar.url }}">
+      {% else %}{{ comment.author.first_name|first|upper }}{% endif %}
+    </div>
+    <div style="flex:1;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <span style="font-weight:600;font-size:13px;">{{ comment.author.get_full_name }}</span>
+        <span style="font-size:11px;color:var(--ink-4);">{{ comment.created_at|timesince }} ago</span>
+      </div>
+      <p style="font-size:14px; color:var(--ink-2);">{{ comment.body }}</p>
+    </div>
+  </div>
+  {% empty %}
+  <p style="color:var(--ink-4); font-size:14px;">No comments yet.</p>
+  {% endfor %}
+
+  {% if user.is_authenticated %}
+  <form method="post" action="{% url 'knowledge_base:add_comment' post.slug %}" style="margin-top:24px;">
+    {% csrf_token %}
+    <textarea name="body" rows="3" class="form-control" placeholder="Ask a question or provide feedback..." style="margin-bottom:12px;"></textarea>
+    <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

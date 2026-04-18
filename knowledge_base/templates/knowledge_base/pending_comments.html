@@ -1,0 +1,968 @@
+{% extends "knowledge_base/base.html" %}
+{% load static %}
+
+{% block title %}Comment Queue — ACT InnerCircle Admin{% endblock %}
+
+{% block content %}
+<div class="pq-page">
+
+  <!-- ══════════════════════════════════════════════════════
+       PAGE HEADER
+  ══════════════════════════════════════════════════════ -->
+  <header class="pq-header">
+    <div class="pq-header-left">
+      <div class="pq-header-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+                stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <p class="pq-eyebrow">Admin Panel</p>
+        <h1 class="pq-title">Comment Moderation Queue</h1>
+      </div>
+    </div>
+    <div class="pq-header-badges">
+      {% if total_pending > 0 %}
+        <span class="pq-badge pq-badge--urgent">
+          {{ total_pending }} pending
+          {% if total_pending == 1 %}review{% else %}reviews{% endif %}
+        </span>
+      {% else %}
+        <span class="pq-badge pq-badge--clear">All clear</span>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════
+       FLASH MESSAGES
+  ══════════════════════════════════════════════════════ -->
+  {% if messages %}
+    <div class="pq-messages">
+      {% for message in messages %}
+        <div class="pq-flash pq-flash--{{ message.tags }}">
+          <div class="pq-flash-icon">
+            {% if message.tags == 'success' %}
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            {% elif message.tags == 'warning' %}
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2L14 13H2L8 2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                <path d="M8 7v3M8 11.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            {% else %}
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M8 5v4M8 10.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            {% endif %}
+          </div>
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- ══════════════════════════════════════════════════════
+       TWO-COLUMN LAYOUT: main queue + right sidebar
+  ══════════════════════════════════════════════════════ -->
+  <div class="pq-layout">
+
+    <!-- ── LEFT: Main pending queue ── -->
+    <main class="pq-main">
+
+      {% if unapproved_comments %}
+
+        <!-- Bulk actions bar — only visible when items are checked -->
+        <form method="post" action="{% url 'knowledge_base:bulk_comment_action' %}" id="bulkForm">
+          {% csrf_token %}
+
+          <div class="pq-bulk-bar" id="bulkBar">
+            <span class="pq-bulk-label">
+              <span id="checkedCount">0</span> selected
+            </span>
+            <div class="pq-bulk-actions">
+              <button type="submit" name="bulk_action" value="approve"
+                      class="pq-btn pq-btn--approve pq-btn--sm">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                  <path d="M2.5 8l4 4 7-7" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Approve selected
+              </button>
+              <button type="submit" name="bulk_action" value="reject"
+                      class="pq-btn pq-btn--reject pq-btn--sm">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round"/>
+                </svg>
+                Reject selected
+              </button>
+            </div>
+            <button type="button" class="pq-bulk-clear" id="clearAll">
+              Clear selection
+            </button>
+          </div>
+
+          <!-- Select-all row -->
+          <div class="pq-select-all-row">
+            <label class="pq-checkbox-label">
+              <input type="checkbox" id="selectAll" class="pq-checkbox">
+              <span>Select all {{ unapproved_comments|length }} comment{{ unapproved_comments|length|pluralize }}</span>
+            </label>
+            <span class="pq-queue-count">
+              {{ total_pending }} item{{ total_pending|pluralize }} in queue
+            </span>
+          </div>
+
+          <!-- Comment cards -->
+          <div class="pq-cards">
+            {% for comment in unapproved_comments %}
+            <div class="pq-card" id="card-{{ comment.id }}">
+
+              <!-- Checkbox + author row -->
+              <div class="pq-card-top">
+                <label class="pq-card-check">
+                  <input type="checkbox"
+                         name="comment_ids"
+                         value="{{ comment.id }}"
+                         class="pq-checkbox pq-comment-checkbox">
+                </label>
+
+                <div class="pq-author-block">
+                  <div class="pq-avatar">
+                    {{ comment.author.first_name|first|default:comment.author.email|first|upper }}
+                  </div>
+                  <div class="pq-author-info">
+                    <span class="pq-author-name">
+                      {{ comment.author.get_full_name|default:comment.author.email }}
+                    </span>
+                    <span class="pq-author-email">{{ comment.author.email }}</span>
+                  </div>
+                </div>
+
+                <div class="pq-card-meta">
+                  <span class="pq-time" title="{{ comment.created_at|date:'d M Y, H:i' }}">
+                    {{ comment.created_at|timesince }} ago
+                  </span>
+                  <span class="pq-dept">
+                    {{ comment.author.department|default:"—" }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Comment body -->
+              <div class="pq-comment-body">
+                <blockquote class="pq-comment-text">
+                  {{ comment.body }}
+                </blockquote>
+              </div>
+
+              <!-- Post context -->
+              <div class="pq-post-ref">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor"
+                        stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span class="pq-post-ref-label">On:</span>
+                <a href="{% url 'knowledge_base:post_detail' comment.post.slug %}"
+                   class="pq-post-link" target="_blank">
+                  {{ comment.post.title|truncatechars:60 }}
+                </a>
+                <span class="pq-post-author">
+                  by {{ comment.post.author.get_full_name|default:comment.post.author.email }}
+                </span>
+              </div>
+
+              <!-- Action buttons -->
+              {% comment %}
+                Each button is its own mini POST form.
+                This is intentional — we never perform data mutations with GET.
+
+                hidden input 'next' tells the view where to redirect after:
+                  'pending_comments' → back to this queue (default)
+                  'post_detail'      → back to the post page
+
+                update_fields=['is_approved'] in the view means only that
+                one column is written to the DB, not the whole row.
+             {% endcomment %}
+              <div class="pq-card-actions">
+
+                <form method="post"
+                      action="{% url 'knowledge_base:toggle_comment_approval' comment.id %}"
+                      class="pq-action-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="approve">
+                  <input type="hidden" name="next"   value="pending_comments">
+                  <button type="submit" class="pq-btn pq-btn--approve">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                      <path d="M2.5 8l4 4 7-7" stroke="currentColor" stroke-width="1.6"
+                            stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Approve
+                  </button>
+                </form>
+
+                <form method="post"
+                      action="{% url 'knowledge_base:toggle_comment_approval' comment.id %}"
+                      class="pq-action-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="reject">
+                  <input type="hidden" name="next"   value="pending_comments">
+                  <button type="submit" class="pq-btn pq-btn--reject">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                      <path d="M3 3l10 10M13 3L3 13" stroke="currentColor"
+                            stroke-width="1.6" stroke-linecap="round"/>
+                    </svg>
+                    Reject
+                  </button>
+                </form>
+
+                <!-- View on post (separate link, not a form) -->
+                <a href="{% url 'knowledge_base:post_detail' comment.post.slug %}#comments"
+                   class="pq-btn pq-btn--ghost" target="_blank">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <path d="M1 8s3-5.5 7-5.5S15 8 15 8s-3 5.5-7 5.5S1 8 1 8z"
+                          stroke="currentColor" stroke-width="1.4"/>
+                    <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/>
+                  </svg>
+                  View post
+                </a>
+
+              </div>
+            </div><!-- /pq-card -->
+            {% endfor %}
+          </div><!-- /pq-cards -->
+
+        </form><!-- /bulkForm -->
+
+      {% else %}
+
+        <!-- Empty state -->
+        <div class="pq-empty">
+          <div class="pq-empty-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" stroke="currentColor"
+                    stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M22 4L12 14.01l-3-3" stroke="currentColor"
+                    stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h2 class="pq-empty-title">Queue is clear</h2>
+          <p class="pq-empty-text">
+            No comments are waiting for review. All submitted comments have been
+            actioned. Check back when new activity comes in.
+          </p>
+          <a href="{% url 'knowledge_base:post_list' %}" class="pq-btn pq-btn--outline">
+            Back to posts
+          </a>
+        </div>
+
+      {% endif %}
+
+    </main><!-- /pq-main -->
+
+
+    <!-- ── RIGHT SIDEBAR ── -->
+    <aside class="pq-sidebar">
+
+      <!-- By-post breakdown -->
+      {% if posts_with_pending %}
+      <div class="pq-sidebar-card">
+        <h2 class="pq-sidebar-heading">Pending by post</h2>
+        <ul class="pq-post-breakdown">
+          {% for row in posts_with_pending %}
+          <li class="pq-breakdown-row">
+            <div class="pq-breakdown-info">
+              <a href="{% url 'knowledge_base:post_detail' row.post__slug %}"
+                 class="pq-breakdown-title" target="_blank">
+                {{ row.post__title|truncatechars:38 }}
+              </a>
+            </div>
+            <span class="pq-breakdown-badge">{{ row.pending_count }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <!-- Recently approved -->
+      {% if recently_approved %}
+      <div class="pq-sidebar-card">
+        <h2 class="pq-sidebar-heading">Recently approved</h2>
+        <ul class="pq-recent-list">
+          {% for comment in recently_approved %}
+          <li class="pq-recent-item">
+            <div class="pq-recent-top">
+              <div class="pq-recent-avatar">
+                {{ comment.author.first_name|first|default:comment.author.email|first|upper }}
+              </div>
+              <div class="pq-recent-meta">
+                <span class="pq-recent-name">
+                  {{ comment.author.get_full_name|default:comment.author.email|truncatechars:22 }}
+                </span>
+                <span class="pq-recent-time">{{ comment.created_at|timesince }} ago</span>
+              </div>
+              {% comment %}
+                Undo button: posts back action=reject to flip is_approved back to False.
+                Gives admins a grace window to reverse accidental approvals.
+              {% endcomment %}
+              <form method="post"
+                    action="{% url 'knowledge_base:toggle_comment_approval' comment.id %}"
+                    class="pq-undo-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reject">
+                <input type="hidden" name="next"   value="pending_comments">
+                <button type="submit" class="pq-undo-btn" title="Undo approval">
+                  Undo
+                </button>
+              </form>
+            </div>
+            <p class="pq-recent-body">{{ comment.body|truncatechars:80 }}</p>
+            <a href="{% url 'knowledge_base:post_detail' comment.post.slug %}"
+               class="pq-recent-post">{{ comment.post.title|truncatechars:40 }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <!-- Admin quick links -->
+      <div class="pq-sidebar-card pq-sidebar-card--muted">
+        <h2 class="pq-sidebar-heading">Admin links</h2>
+        <nav class="pq-admin-nav">
+          <a href="{% url 'knowledge_base:approval_queue' %}" class="pq-admin-link">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Post approval queue
+          </a>
+          <a href="{% url 'knowledge_base:user_list' %}" class="pq-admin-link">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M1 14c0-3 2.2-5 5-5s5 2 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M13 7v6M10 10h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            Manage users
+          </a>
+          <a href="{% url 'knowledge_base:analytics_dashboard' %}" class="pq-admin-link">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <path d="M2 12l3-4 3 2 3-5 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Analytics
+          </a>
+        </nav>
+      </div>
+
+    </aside><!-- /pq-sidebar -->
+
+  </div><!-- /pq-layout -->
+
+</div><!-- /pq-page -->
+
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── Checkbox state management ──────────────────────────────────────────
+     Three behaviours:
+       1. "Select all" checks/unchecks every comment checkbox
+       2. Any individual checkbox updates the counter and bulk bar visibility
+       3. "Clear selection" unchecks everything and hides the bulk bar
+  ────────────────────────────────────────────────────────────────────────── */
+  const selectAll   = document.getElementById('selectAll');
+  const bulkBar     = document.getElementById('bulkBar');
+  const clearAll    = document.getElementById('clearAll');
+  const countLabel  = document.getElementById('checkedCount');
+  const checkboxes  = document.querySelectorAll('.pq-comment-checkbox');
+
+  function updateBulkBar() {
+    const checked = document.querySelectorAll('.pq-comment-checkbox:checked').length;
+    countLabel.textContent = checked;
+    /* Show bulk bar as soon as at least 1 box is ticked */
+    bulkBar.classList.toggle('pq-bulk-bar--visible', checked > 0);
+    /* Sync the select-all checkbox tri-state */
+    if (checked === 0)                     { selectAll.indeterminate = false; selectAll.checked = false; }
+    else if (checked === checkboxes.length){ selectAll.indeterminate = false; selectAll.checked = true;  }
+    else                                   { selectAll.indeterminate = true;  }
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function () {
+      checkboxes.forEach(cb => { cb.checked = selectAll.checked; });
+      updateBulkBar();
+    });
+  }
+
+  checkboxes.forEach(cb => cb.addEventListener('change', updateBulkBar));
+
+  if (clearAll) {
+    clearAll.addEventListener('click', function () {
+      checkboxes.forEach(cb => { cb.checked = false; });
+      updateBulkBar();
+    });
+  }
+
+  /* ── Card removal animation after individual approve/reject ─────────────
+     When a single-comment form submits, the page reloads and the card
+     disappears naturally. This adds a brief fade-out so it doesn't jump.
+     We store the comment id in sessionStorage before submit and skip
+     the card on the next render — but the simpler approach is just the
+     CSS transition on form submit below.
+  ────────────────────────────────────────────────────────────────────────── */
+  document.querySelectorAll('.pq-action-form').forEach(function (form) {
+    form.addEventListener('submit', function () {
+      const card = form.closest('.pq-card');
+      if (card) {
+        card.style.transition = 'opacity .25s, transform .25s';
+        card.style.opacity    = '0';
+        card.style.transform  = 'translateX(12px)';
+      }
+    });
+  });
+
+  /* ── Staggered card entrance animation ──────────────────────────────────
+     Each card fades up with a delay proportional to its index.
+     Uses IntersectionObserver so cards below the fold only animate
+     when they scroll into view.
+  ────────────────────────────────────────────────────────────────────────── */
+  const observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('pq-card--visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.pq-card').forEach(function (card, i) {
+    card.style.transitionDelay = (i * 50) + 'ms';
+    observer.observe(card);
+  });
+
+})();
+</script>
+
+
+<style>
+/* ══════════════════════════════════════════════════════════════
+   ACT InnerCircle — Pending Comments Queue
+   Fonts: DM Serif Display · DM Sans
+   Palette: #D42B2B red, greens for approve, slate for reject
+══════════════════════════════════════════════════════════════ */
+
+.pq-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 5rem;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+/* ── Header ── */
+.pq-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #ebe8e2;
+  flex-wrap: wrap;
+}
+.pq-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pq-header-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: #fdf1f1;
+  border: 1px solid #f5c0c0;
+  color: #D42B2B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pq-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #D42B2B;
+  margin: 0 0 3px;
+}
+.pq-title {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.55rem;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin: 0;
+  line-height: 1.1;
+}
+.pq-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+}
+.pq-badge--urgent { background: #fdf1f1; color: #9b1c1c; border-color: #f5c0c0; }
+.pq-badge--clear  { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+
+/* ── Flash messages ── */
+.pq-messages { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 8px; }
+.pq-flash {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+.pq-flash--success { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+.pq-flash--warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+.pq-flash--error   { background: #fdf1f1; color: #9b1c1c; border-color: #f5c0c0; }
+.pq-flash-icon     { flex-shrink: 0; display: flex; }
+
+/* ── Two-column layout ── */
+.pq-layout {
+  display: grid;
+  grid-template-columns: 1fr 288px;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .pq-layout { grid-template-columns: 1fr; }
+  .pq-sidebar { order: -1; }
+}
+
+/* ── Bulk action bar ── */
+.pq-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  /* Hidden by default, shown via JS when checkboxes are ticked */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity .2s, transform .2s;
+}
+.pq-bulk-bar--visible {
+  opacity: 1;
+  pointer-events: all;
+  transform: none;
+}
+.pq-bulk-label { font-size: 13px; font-weight: 500; color: #fff; white-space: nowrap; }
+.pq-bulk-actions { display: flex; gap: 8px; flex: 1; }
+.pq-bulk-clear {
+  font-size: 12px;
+  color: rgba(255,255,255,.5);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color .15s;
+}
+.pq-bulk-clear:hover { color: #fff; }
+
+/* ── Select-all row ── */
+.pq-select-all-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px;
+  margin-bottom: 12px;
+}
+.pq-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+}
+.pq-queue-count { font-size: 12px; color: #aaa; }
+
+/* Checkbox styling */
+.pq-checkbox {
+  width: 16px; height: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  accent-color: #D42B2B;
+  flex-shrink: 0;
+}
+
+/* ── Comment cards ── */
+.pq-cards { display: flex; flex-direction: column; gap: 12px; }
+
+.pq-card {
+  background: #fff;
+  border: 1px solid #ebe8e2;
+  border-radius: 12px;
+  padding: 1.25rem;
+  position: relative;
+  /* Entrance animation — starts invisible, JS adds .pq-card--visible */
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .35s ease, transform .35s ease,
+              border-color .15s, box-shadow .15s;
+}
+.pq-card--visible { opacity: 1; transform: none; }
+.pq-card:hover {
+  border-color: #ddd;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+/* Left accent line */
+.pq-card::before {
+  content: '';
+  position: absolute;
+  top: 14px; bottom: 14px; left: 0;
+  width: 3px;
+  background: #f5c0c0;
+  border-radius: 0 2px 2px 0;
+  transition: background .2s;
+}
+.pq-card:hover::before { background: #D42B2B; }
+
+/* Card top row: checkbox + author + meta */
+.pq-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.pq-card-check { padding-top: 2px; flex-shrink: 0; }
+
+.pq-author-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.pq-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: #fdf1f1;
+  border: 1px solid #f5c0c0;
+  color: #D42B2B;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pq-author-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pq-author-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pq-author-email { font-size: 11px; color: #aaa; }
+
+.pq-card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.pq-time { font-size: 11px; color: #bbb; white-space: nowrap; }
+.pq-dept { font-size: 11px; color: #aaa; }
+
+/* Comment text */
+.pq-comment-body { margin-bottom: 12px; }
+.pq-comment-text {
+  margin: 0;
+  padding: 12px 16px;
+  background: #faf9f7;
+  border-left: 3px solid #e5e2db;
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #333;
+  font-style: normal;
+  word-break: break-word;
+}
+
+/* Post reference */
+.pq-post-ref {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #aaa;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.pq-post-ref-label { color: #bbb; }
+.pq-post-link {
+  color: #555;
+  text-decoration: none;
+  font-weight: 500;
+}
+.pq-post-link:hover { color: #D42B2B; text-decoration: underline; }
+.pq-post-author { color: #bbb; }
+
+/* Action buttons row */
+.pq-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pq-action-form { display: inline-flex; margin: 0; }
+
+/* ── Buttons ── */
+.pq-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 16px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .15s, transform .1s, box-shadow .15s;
+  white-space: nowrap;
+  line-height: 1;
+}
+.pq-btn:active { transform: scale(0.97); }
+
+.pq-btn--approve {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+.pq-btn--approve:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  box-shadow: 0 2px 8px rgba(22,101,52,.12);
+}
+
+.pq-btn--reject {
+  background: #fdf1f1;
+  color: #9b1c1c;
+  border-color: #f5c0c0;
+}
+.pq-btn--reject:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  box-shadow: 0 2px 8px rgba(155,28,28,.1);
+}
+
+.pq-btn--ghost {
+  background: transparent;
+  color: #777;
+  border-color: #e5e2db;
+}
+.pq-btn--ghost:hover { background: #f7f5f2; color: #444; }
+
+.pq-btn--outline {
+  background: transparent;
+  color: #D42B2B;
+  border-color: #f5c0c0;
+}
+.pq-btn--outline:hover { background: #fdf1f1; }
+
+.pq-btn--sm { font-size: 12px; padding: 5px 12px; }
+
+/* ── Empty state ── */
+.pq-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 5rem 2rem;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #ebe8e2;
+  border-radius: 12px;
+}
+.pq-empty-icon {
+  width: 68px; height: 68px;
+  border-radius: 50%;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #166534;
+}
+.pq-empty-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin: 0;
+}
+.pq-empty-text {
+  font-size: 14px;
+  color: #aaa;
+  line-height: 1.6;
+  max-width: 320px;
+  margin: 0;
+}
+
+/* ── Sidebar ── */
+.pq-sidebar { display: flex; flex-direction: column; gap: 1rem; }
+
+.pq-sidebar-card {
+  background: #fff;
+  border: 1px solid #ebe8e2;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+.pq-sidebar-card--muted { background: #faf9f7; }
+
+.pq-sidebar-heading {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #aaa;
+  margin: 0 0 12px;
+}
+
+/* Post breakdown list */
+.pq-post-breakdown { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.pq-breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f2efea;
+}
+.pq-breakdown-row:last-child { border-bottom: none; }
+.pq-breakdown-title {
+  font-size: 12px;
+  color: #444;
+  text-decoration: none;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pq-breakdown-title:hover { color: #D42B2B; }
+.pq-breakdown-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: #fdf1f1;
+  color: #9b1c1c;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid #f5c0c0;
+  flex-shrink: 0;
+}
+
+/* Recently approved list */
+.pq-recent-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0; }
+.pq-recent-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f2efea;
+}
+.pq-recent-item:last-child { border-bottom: none; }
+
+.pq-recent-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.pq-recent-avatar {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pq-recent-meta { flex: 1; min-width: 0; }
+.pq-recent-name {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pq-recent-time { font-size: 10px; color: #bbb; }
+
+/* Undo button */
+.pq-undo-form { display: inline-flex; }
+.pq-undo-btn {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 5px;
+  border: 1px solid #e5e2db;
+  background: transparent;
+  color: #aaa;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: background .12s, color .12s;
+}
+.pq-undo-btn:hover { background: #fdf1f1; color: #9b1c1c; border-color: #f5c0c0; }
+
+.pq-recent-body {
+  font-size: 12px;
+  color: #777;
+  line-height: 1.5;
+  margin: 0 0 4px;
+  word-break: break-word;
+}
+.pq-recent-post {
+  font-size: 11px;
+  color: #D42B2B;
+  text-decoration: none;
+  font-weight: 500;
+}
+.pq-recent-post:hover { text-decoration: underline; }
+
+/* Admin nav links */
+.pq-admin-nav { display: flex; flex-direction: column; gap: 4px; }
+.pq-admin-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #555;
+  text-decoration: none;
+  padding: 7px 10px;
+  border-radius: 7px;
+  transition: background .12s, color .12s;
+}
+.pq-admin-link:hover { background: #fdf1f1; color: #D42B2B; }
+</style>
+
+{% endblock %}

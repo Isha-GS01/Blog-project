@@ -1,0 +1,84 @@
+{% extends "knowledge_base/base.html" %}
+{% block title %}Sign In — ACT InnerCircle{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Hide sidebars on auth pages */
+  .sidebar-left, .sidebar-right { display: none !important; }
+  .main-content { margin-left: 0 !important; margin-right: 0 !important; }
+  .auth-wrap {
+    min-height: calc(100vh - var(--nav-h));
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 16px;
+    background: linear-gradient(135deg, #FFF5F5 0%, #F4F5F7 60%, #F0F4FF 100%);
+  }
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    padding: 40px;
+    width: 100%; max-width: 420px;
+    animation: fadeSlide .35s ease;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="width:52px;height:52px;border-radius:14px;background:var(--red);
+                  display:flex;align-items:center;justify-content:center;
+                  font-size:26px;margin:0 auto 14px;">⚡</div>
+      <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px;">Welcome back</h1>
+      <p style="font-size:14px;color:var(--ink-4);">Sign in to ACT InnerCircle</p>
+    </div>
+
+    <!-- Error -->
+    {% if form.non_field_errors %}
+    <div class="flash flash-error" style="margin-bottom:20px;">
+      ✕ Invalid email or password. Please try again.
+    </div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">ACT Corporate Email</label>
+        {{ form.username }}
+      </div>
+
+      <div class="form-group" style="margin-bottom:24px;">
+        <label class="form-label">Password</label>
+        {{ form.password }}
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;">
+        Sign In →
+      </button>
+    </form>
+
+    <p style="text-align:center;margin-top:20px;font-size:14px;color:var(--ink-4);">
+      Don't have an account?
+      <a href="{% url 'knowledge_base:register' %}" style="color:var(--red);font-weight:500;">Join InnerCircle</a>
+    </p>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Style Django's raw input widgets
+  document.querySelectorAll('input[type=text],input[type=email],input[type=password]').forEach(el => {
+    el.classList.add('form-control');
+    el.setAttribute('autocomplete', el.type === 'password' ? 'current-password' : 'email');
+  });
+  document.querySelector('input[type=email]') && (document.querySelector('input[type=email]').placeholder = 'yourname@actcorp.in');
+  document.querySelector('input[type=password]') && (document.querySelector('input[type=password]').placeholder = 'Your password');
+</script>
+{% endblock %}

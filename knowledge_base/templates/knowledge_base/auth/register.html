@@ -1,0 +1,104 @@
+{% extends "knowledge_base/base.html" %}
+{% block title %}Join ACT InnerCircle{% endblock %}
+
+{% block extra_head %}
+<style>
+  .sidebar-left, .sidebar-right { display: none !important; }
+  .main-content { margin-left: 0 !important; margin-right: 0 !important; }
+  .auth-wrap {
+    min-height: calc(100vh - var(--nav-h));
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 16px;
+    background: linear-gradient(135deg, #FFF5F5 0%, #F4F5F7 60%, #F0F4FF 100%);
+  }
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    padding: 40px;
+    width: 100%; max-width: 480px;
+    animation: fadeSlide .35s ease;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="width:52px;height:52px;border-radius:14px;background:var(--red);
+                  display:flex;align-items:center;justify-content:center;
+                  font-size:26px;margin:0 auto 14px;">⚡</div>
+      <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px;">Join InnerCircle</h1>
+      <p style="font-size:14px;color:var(--ink-4);">Only <strong>@actcorp.in</strong> email addresses are accepted</p>
+    </div>
+
+    <!-- Non-field errors -->
+    {% if form.non_field_errors %}
+    <div class="flash flash-error" style="margin-bottom:16px;">
+      ✕ {{ form.non_field_errors.0 }}
+    </div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- Name row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div class="form-group">
+          <label class="form-label">First Name <span class="req">*</span></label>
+          <input type="text" name="first_name" required class="form-control" placeholder="Arjun"
+                 value="{{ form.first_name.value|default:'' }}">
+          {% if form.first_name.errors %}<span class="form-error">{{ form.first_name.errors.0 }}</span>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name <span class="req">*</span></label>
+          <input type="text" name="last_name" required class="form-control" placeholder="Sharma"
+                 value="{{ form.last_name.value|default:'' }}">
+          {% if form.last_name.errors %}<span class="form-error">{{ form.last_name.errors.0 }}</span>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">ACT Corporate Email <span class="req">*</span></label>
+        <input type="email" name="email" required class="form-control" placeholder="yourname@actcorp.in"
+               value="{{ form.email.value|default:'' }}" autocomplete="email">
+        {% if form.email.errors %}
+          <span class="form-error">{{ form.email.errors.0 }}</span>
+        {% endif %}
+      </div>
+
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">Department</label>
+        <input type="text" name="department" class="form-control" placeholder="e.g. Network Operations, Customer Experience"
+               value="{{ form.department.value|default:'' }}">
+      </div>
+
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">Password <span class="req">*</span></label>
+        <input type="password" name="password1" required class="form-control" placeholder="Create a strong password" autocomplete="new-password">
+        {% if form.password1.errors %}<span class="form-error">{{ form.password1.errors.0 }}</span>{% endif %}
+      </div>
+
+      <div class="form-group" style="margin-bottom:24px;">
+        <label class="form-label">Confirm Password <span class="req">*</span></label>
+        <input type="password" name="password2" required class="form-control" placeholder="Repeat your password" autocomplete="new-password">
+        {% if form.password2.errors %}<span class="form-error">{{ form.password2.errors.0 }}</span>{% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;">
+        Create My Account →
+      </button>
+    </form>
+
+    <p style="text-align:center;margin-top:20px;font-size:14px;color:var(--ink-4);">
+      Already have an account?
+      <a href="{% url 'knowledge_base:login' %}" style="color:var(--red);font-weight:500;">Sign in</a>
+    </p>
+
+  </div>
+</div>
+{% endblock %}

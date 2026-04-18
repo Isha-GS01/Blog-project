@@ -1,0 +1,903 @@
+{% extends "knowledge_base/base.html" %}
+{% load static %}
+
+{% block title %}Analytics — ACT InnerCircle{% endblock %}
+
+{% block content %}
+
+{# ═══════════════════════════════════════════════════════════════
+   DATA BRIDGE — Pass Django context variables to JavaScript safely.
+
+   json_script renders a <script type="application/json"> tag.
+   JavaScript then reads it with JSON.parse(document.getElementById(...).textContent)
+   This avoids XSS vulnerabilities that arise from directly
+   interpolating Python values into JS strings like:
+       var data = {{ author_data }};   ← UNSAFE, never do this
+   ═══════════════════════════════════════════════════════════════ #}
+{{ author_labels|json_script:"js-author-labels" }}
+{{ author_data|json_script:"js-author-data" }}
+{{ trend_labels|json_script:"js-trend-labels" }}
+{{ trend_data|json_script:"js-trend-data" }}
+
+
+<div class="an-page">
+
+  <!-- ── Page header ──────────────────────────────────────── -->
+  <header class="an-header">
+    <div class="an-header-text">
+      <p class="an-header-eyebrow">ACT InnerCircle</p>
+      <h1 class="an-header-title">Platform Analytics</h1>
+    </div>
+    <div class="an-header-meta">
+      <span class="an-live-dot"></span>
+      <span class="an-live-label">Live data</span>
+      <span class="an-header-date">{{ now|date:"d M Y" }}</span>
+    </div>
+  </header>
+
+  <!-- ── KPI summary strip ────────────────────────────────── -->
+  <section class="an-kpi-strip" aria-label="Key metrics">
+    <div class="an-kpi-card an-kpi-card--accent">
+      <span class="an-kpi-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M14 2v6h6M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="an-kpi-num" data-target="{{ total_posts }}">0</span>
+      <span class="an-kpi-label">Published Posts</span>
+    </div>
+
+    <div class="an-kpi-card">
+      <span class="an-kpi-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="an-kpi-num" data-target="{{ total_authors }}">0</span>
+      <span class="an-kpi-label">Active Employees</span>
+    </div>
+
+    <div class="an-kpi-card">
+      <span class="an-kpi-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 4l2.09 6.26L20 12l-5.91 1.74L12 20l-2.09-6.26L4 12l5.91-1.74L12 4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="an-kpi-num" data-target="{{ total_upvotes }}">0</span>
+      <span class="an-kpi-label">Total Upvotes</span>
+    </div>
+
+    <div class="an-kpi-card">
+      <span class="an-kpi-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="an-kpi-num" data-target="{{ total_comments|default:0 }}">0</span>
+      <span class="an-kpi-label">Comments</span>
+    </div>
+  </section>
+
+  <!-- ── Charts row ───────────────────────────────────────── -->
+  <section class="an-charts-row" aria-label="Charts">
+
+    <!-- Line chart: post trend -->
+    <div class="an-chart-card an-chart-card--wide">
+      <div class="an-chart-header">
+        <div>
+          <h2 class="an-chart-title">Publishing Trend</h2>
+          <p class="an-chart-sub">Posts published per month — last 6 months</p>
+        </div>
+        <div class="an-chart-legend">
+          <span class="an-legend-dot an-legend-dot--red"></span>
+          <span class="an-legend-text">Published posts</span>
+        </div>
+      </div>
+      <div class="an-chart-body">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Bar chart: top authors -->
+    <div class="an-chart-card">
+      <div class="an-chart-header">
+        <div>
+          <h2 class="an-chart-title">Top Authors</h2>
+          <p class="an-chart-sub">By published post count</p>
+        </div>
+      </div>
+      <div class="an-chart-body">
+        <canvas id="authorChart"></canvas>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── Bottom tables row ────────────────────────────────── -->
+  <section class="an-tables-row" aria-label="Top posts">
+
+    <!-- Most liked — all time -->
+    <div class="an-table-card">
+      <div class="an-table-header">
+        <h2 class="an-table-title">Most Liked — All Time</h2>
+        <span class="an-table-badge an-table-badge--alltime">All time</span>
+      </div>
+      <table class="an-table">
+        <thead>
+          <tr>
+            <th class="an-th-rank"></th>
+            <th>Post</th>
+            <th>Author</th>
+            <th class="an-th-num">Likes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for post in top_posts_alltime %}
+          <tr class="an-tr">
+            <td class="an-td-rank">
+              {% if forloop.counter == 1 %}<span class="an-medal an-medal--gold">1</span>
+              {% elif forloop.counter == 2 %}<span class="an-medal an-medal--silver">2</span>
+              {% elif forloop.counter == 3 %}<span class="an-medal an-medal--bronze">3</span>
+              {% else %}<span class="an-rank-plain">{{ forloop.counter }}</span>
+              {% endif %}
+            </td>
+            <td class="an-td-post">
+              <a href="{% url 'knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:post_detail'
+
+ post.slug %}" class="an-post-link">{{ post.title }}</a>
+              {% if post.category %}
+                <span class="an-chip">{{ post.category.name }}</span>
+              {% endif %}
+            </td>
+            <td class="an-td-author">
+              <div class="an-author-cell">
+                <div class="an-avatar">{{ post.author.first_name|first|default:post.author.email|first|upper }}</div>
+                <span>{{ post.author.get_full_name|default:post.author.email|truncatechars:20 }}</span>
+              </div>
+            </td>
+            <td class="an-td-num">
+              <div class="an-like-bar-wrap">
+                <span class="an-like-count">{{ post.upvote_count }}</span>
+                <div class="an-like-track">
+                  <div class="an-like-fill" style="width: {% widthratio post.upvote_count top_posts_alltime.0.upvote_count 100 %}%"></div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="an-empty">No published posts yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Most liked — this month -->
+    <div class="an-table-card">
+      <div class="an-table-header">
+        <h2 class="an-table-title">Most Liked — This Month</h2>
+        <span class="an-table-badge an-table-badge--month">{{ now|date:"M Y" }}</span>
+      </div>
+      <table class="an-table">
+        <thead>
+          <tr>
+            <th class="an-th-rank"></th>
+            <th>Post</th>
+            <th>Author</th>
+            <th class="an-th-num">Likes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for post in top_posts_monthly %}
+          <tr class="an-tr">
+            <td class="an-td-rank">
+              {% if forloop.counter == 1 %}<span class="an-medal an-medal--gold">1</span>
+              {% elif forloop.counter == 2 %}<span class="an-medal an-medal--silver">2</span>
+              {% elif forloop.counter == 3 %}<span class="an-medal an-medal--bronze">3</span>
+              {% else %}<span class="an-rank-plain">{{ forloop.counter }}</span>
+              {% endif %}
+            </td>
+            <td class="an-td-post">
+              <a href="{% url 'knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:knowledge_base:post_detail'
+
+
+
+
+
+
+
+
+
+
+
+ post.slug %}" class="an-post-link">{{ post.title }}</a>
+            </td>
+            <td class="an-td-author">
+              <div class="an-author-cell">
+                <div class="an-avatar">{{ post.author.first_name|first|default:post.author.email|first|upper }}</div>
+                <span>{{ post.author.get_full_name|default:post.author.email|truncatechars:20 }}</span>
+              </div>
+            </td>
+            <td class="an-td-num">
+              <div class="an-like-bar-wrap">
+                <span class="an-like-count">{{ post.upvote_count }}</span>
+                <div class="an-like-track">
+                  <div class="an-like-fill" style="width: {% if top_posts_monthly.0.upvote_count > 0 %}{% widthratio post.upvote_count top_posts_monthly.0.upvote_count 100 %}{% else %}0{% endif %}%"></div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="an-empty">No posts published this month yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+
+  <!-- ── Top authors leaderboard ──────────────────────────── -->
+  <section class="an-authors-section" aria-label="Top authors leaderboard">
+    <div class="an-table-card an-table-card--full">
+      <div class="an-table-header">
+        <h2 class="an-table-title">Author Leaderboard</h2>
+        <span class="an-table-badge an-table-badge--alltime">Top contributors</span>
+      </div>
+      <div class="an-leaderboard">
+        {% for author in top_authors %}
+        <div class="an-lb-row {% if forloop.counter == 1 %}an-lb-row--top{% endif %}">
+          <div class="an-lb-rank">
+            {% if forloop.counter == 1 %}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+            {% else %}
+              <span class="an-lb-num">{{ forloop.counter }}</span>
+            {% endif %}
+          </div>
+          <div class="an-lb-avatar">{{ author.first_name|first|default:author.email|first|upper }}</div>
+          <div class="an-lb-info">
+            <span class="an-lb-name">{{ author.get_full_name|default:author.email }}</span>
+            <span class="an-lb-dept">{{ author.department|default:"ACT Fibernet" }}</span>
+          </div>
+          <div class="an-lb-bar-wrap">
+            <div class="an-lb-track">
+              <div class="an-lb-fill" style="width: {% widthratio author.post_count top_authors.0.post_count 100 %}%"></div>
+            </div>
+          </div>
+          <div class="an-lb-count">
+            <span class="an-lb-num-big">{{ author.post_count }}</span>
+            <span class="an-lb-unit">posts</span>
+          </div>
+        </div>
+        {% empty %}
+        <p class="an-empty">No authors yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+</div><!-- /an-page -->
+
+
+<!-- Chart.js from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── 1. Read Django data from json_script tags ──────────────────────
+     This is the SAFE pattern. Never do: var x = {{ variable }}
+     json_script escapes HTML entities, preventing XSS attacks.
+  ──────────────────────────────────────────────────────────────────── */
+  const authorLabels = JSON.parse(document.getElementById('js-author-labels').textContent);
+  const authorData   = JSON.parse(document.getElementById('js-author-data').textContent);
+  const trendLabels  = JSON.parse(document.getElementById('js-trend-labels').textContent);
+  const trendData    = JSON.parse(document.getElementById('js-trend-data').textContent);
+
+  /* ── 2. Design tokens — kept in one place ── */
+  const RED        = '#D42B2B';
+  const RED_PALE   = 'rgba(212,43,43,0.08)';
+  const RED_MID    = 'rgba(212,43,43,0.18)';
+  const INK_LIGHT  = 'rgba(26,26,26,0.06)';
+  const TEXT_MUTED = '#999';
+  const FONT       = "'DM Sans', system-ui, sans-serif";
+
+  Chart.defaults.font.family = FONT;
+  Chart.defaults.font.size   = 12;
+  Chart.defaults.color       = TEXT_MUTED;
+
+  /* ── 3. Line chart — Publishing Trend ─────────────────────────────── */
+  const trendCtx = document.getElementById('trendChart').getContext('2d');
+
+  /* Gradient fill under the line */
+  const trendGrad = trendCtx.createLinearGradient(0, 0, 0, 260);
+  trendGrad.addColorStop(0,   'rgba(212,43,43,0.15)');
+  trendGrad.addColorStop(0.7, 'rgba(212,43,43,0.03)');
+  trendGrad.addColorStop(1,   'rgba(212,43,43,0.00)');
+
+  new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: trendLabels,
+      datasets: [{
+        label: 'Posts published',
+        data: trendData,
+        borderColor: RED,
+        backgroundColor: trendGrad,
+        borderWidth: 2.5,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: RED,
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointHoverBackgroundColor: RED,
+        fill: true,
+        tension: 0.4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1a',
+          titleColor: '#fff',
+          bodyColor: 'rgba(255,255,255,0.75)',
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            title: items => items[0].label,
+            label: ctx  => '  ' + ctx.parsed.y + ' post' + (ctx.parsed.y !== 1 ? 's' : ''),
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1,
+            precision: 0,
+            padding: 8,
+          },
+          grid: { color: INK_LIGHT, drawBorder: false },
+          border: { display: false },
+        },
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { padding: 8 },
+        }
+      }
+    }
+  });
+
+  /* ── 4. Bar chart — Top Authors ──────────────────────────────────── */
+  /* Build bar colors: first bar = solid red, rest = progressively lighter */
+  const barColors  = authorData.map((_, i) => i === 0 ? RED : `rgba(212,43,43,${0.20 - i * 0.03})`);
+  const barBorders = authorData.map((_, i) => i === 0 ? RED : `rgba(212,43,43,0.35)`);
+
+  new Chart(document.getElementById('authorChart'), {
+    type: 'bar',
+    data: {
+      labels: authorLabels,
+      datasets: [{
+        label: 'Posts',
+        data: authorData,
+        backgroundColor: barColors,
+        borderColor: barBorders,
+        borderWidth: 1,
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1a',
+          titleColor: '#fff',
+          bodyColor: 'rgba(255,255,255,0.75)',
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: ctx => '  ' + ctx.parsed.y + ' post' + (ctx.parsed.y !== 1 ? 's' : ''),
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, precision: 0, padding: 8 },
+          grid: { color: INK_LIGHT, drawBorder: false },
+          border: { display: false },
+        },
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: {
+            padding: 8,
+            /* Truncate long names so they don't overlap */
+            callback: function(val) {
+              const label = this.getLabelForValue(val);
+              return label.length > 12 ? label.slice(0, 11) + '…' : label;
+            }
+          },
+        }
+      }
+    }
+  });
+
+  /* ── 5. KPI counter animation ────────────────────────────────────── */
+  /* Animates numbers from 0 up to their target on page load */
+  function animateCounter(el) {
+    const target   = parseInt(el.dataset.target, 10) || 0;
+    const duration = 1000;
+    const start    = performance.now();
+
+    function step(now) {
+      const elapsed  = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      /* Ease-out cubic: slows down as it approaches target */
+      const eased    = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(eased * target).toLocaleString('en-IN');
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  document.querySelectorAll('.an-kpi-num[data-target]').forEach(animateCounter);
+
+  /* ── 6. Progress bar animation ───────────────────────────────────── */
+  /* Stagger-animate the leaderboard bars and like-fill bars on load */
+  const fills = document.querySelectorAll('.an-lb-fill, .an-like-fill');
+  fills.forEach(function(el, i) {
+    const targetW = el.style.width;
+    el.style.width = '0';
+    setTimeout(function() {
+      el.style.transition = 'width 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      el.style.width = targetW;
+    }, 200 + i * 60);
+  });
+
+})();
+</script>
+
+
+<style>
+/* ═══════════════════════════════════════════════════════
+   ACT InnerCircle — Analytics Dashboard
+   Fonts: DM Serif Display (display) + DM Sans (body)
+   Primary: #D42B2B
+═══════════════════════════════════════════════════════ */
+
+.an-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 5rem;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+/* ── Header ── */
+.an-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 2.25rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #ebe8e2;
+}
+.an-header-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #D42B2B;
+  margin: 0 0 4px;
+}
+.an-header-title {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 2rem;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin: 0;
+  line-height: 1.1;
+}
+.an-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #aaa;
+}
+.an-live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.20);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(34,197,94,0.20); }
+  50%       { box-shadow: 0 0 0 6px rgba(34,197,94,0.08); }
+}
+.an-live-label { color: #22c55e; font-weight: 500; }
+.an-header-date { color: #bbb; }
+
+/* ── KPI strip ── */
+.an-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 760px) { .an-kpi-strip { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 420px) { .an-kpi-strip { grid-template-columns: 1fr; } }
+
+.an-kpi-card {
+  background: #fff;
+  border: 1px solid #ebe8e2;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow .2s, transform .2s;
+}
+.an-kpi-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,.07);
+  transform: translateY(-2px);
+}
+.an-kpi-card--accent {
+  border-color: #f5c0c0;
+  background: #fdf5f5;
+}
+.an-kpi-card--accent::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: #D42B2B;
+  border-radius: 12px 12px 0 0;
+}
+.an-kpi-icon {
+  color: #D42B2B;
+  display: flex;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.an-kpi-card:not(.an-kpi-card--accent) .an-kpi-icon { color: #bbb; }
+.an-kpi-num {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.an-kpi-card--accent .an-kpi-num { color: #D42B2B; }
+.an-kpi-label {
+  font-size: 11px;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  font-weight: 500;
+}
+
+/* ── Charts row ── */
+.an-charts-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 820px) { .an-charts-row { grid-template-columns: 1fr; } }
+
+.an-chart-card {
+  background: #fff;
+  border: 1px solid #ebe8e2;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+.an-chart-card--wide { /* inherits, no extra needed */ }
+
+.an-chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+.an-chart-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 3px;
+}
+.an-chart-sub {
+  font-size: 12px;
+  color: #aaa;
+  margin: 0;
+}
+.an-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.an-legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.an-legend-dot--red { background: #D42B2B; }
+.an-legend-text { font-size: 11px; color: #aaa; }
+
+.an-chart-body {
+  flex: 1;
+  position: relative;
+  min-height: 220px;
+}
+
+/* ── Tables row ── */
+.an-tables-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 820px) { .an-tables-row { grid-template-columns: 1fr; } }
+
+.an-table-card {
+  background: #fff;
+  border: 1px solid #ebe8e2;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.an-table-card--full { width: 100%; }
+
+.an-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid #f2efea;
+  background: #faf9f7;
+}
+.an-table-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+.an-table-badge {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.an-table-badge--alltime { background: #fdf1f1; color: #9b1c1c; border: 1px solid #f5c0c0; }
+.an-table-badge--month   { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+/* Table internals */
+.an-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.an-table thead th {
+  padding: 8px 14px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #bbb;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  text-align: left;
+  background: #faf9f7;
+  border-bottom: 1px solid #f2efea;
+}
+.an-th-rank { width: 36px; }
+.an-th-num  { text-align: right; }
+
+.an-tr td { padding: 10px 14px; border-bottom: 1px solid #f7f5f2; vertical-align: middle; }
+.an-tr:last-child td { border-bottom: none; }
+.an-tr:hover td { background: #fdf9f9; }
+
+.an-td-rank { width: 36px; }
+.an-td-post { max-width: 0; }  /* forces text-overflow on narrow screens */
+.an-td-author { white-space: nowrap; }
+.an-td-num  { text-align: right; }
+
+.an-medal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+}
+.an-medal--gold   { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.an-medal--silver { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+.an-medal--bronze { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+.an-rank-plain    { font-size: 12px; color: #ccc; font-weight: 600; padding-left: 5px; }
+
+.an-post-link {
+  color: #1a1a1a;
+  text-decoration: none;
+  font-weight: 500;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.an-post-link:hover { color: #D42B2B; text-decoration: underline; }
+
+.an-chip {
+  display: inline-block;
+  font-size: 10px;
+  background: #f2f0ec;
+  color: #777;
+  padding: 1px 8px;
+  border-radius: 20px;
+  margin-top: 3px;
+  font-weight: 500;
+}
+.an-author-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+}
+.an-avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: #fdf1f1;
+  color: #D42B2B;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #f5c0c0;
+}
+
+/* Mini like bar */
+.an-like-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.an-like-count {
+  font-weight: 600;
+  color: #D42B2B;
+  font-size: 13px;
+  min-width: 20px;
+  text-align: right;
+}
+.an-like-track {
+  width: 60px; height: 4px;
+  background: #f2efea;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.an-like-fill {
+  height: 100%;
+  background: #D42B2B;
+  border-radius: 2px;
+  width: 0; /* animated by JS */
+}
+
+/* ── Author leaderboard ── */
+.an-authors-section { margin-top: 0; }
+
+.an-leaderboard {
+  padding: 0.75rem 0;
+}
+.an-lb-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 1.4rem;
+  border-bottom: 1px solid #f7f5f2;
+  transition: background .15s;
+}
+.an-lb-row:last-child { border-bottom: none; }
+.an-lb-row:hover { background: #fdf9f9; }
+.an-lb-row--top { background: #fdf5f5; }
+.an-lb-row--top:hover { background: #fceaea; }
+
+.an-lb-rank {
+  width: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.an-lb-num { font-size: 12px; color: #ccc; font-weight: 700; }
+
+.an-lb-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: #fdf1f1;
+  color: #D42B2B;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #f5c0c0;
+}
+.an-lb-row--top .an-lb-avatar {
+  background: #D42B2B;
+  color: #fff;
+  border-color: #D42B2B;
+}
+
+.an-lb-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 140px;
+  flex-shrink: 0;
+}
+.an-lb-name { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+.an-lb-dept { font-size: 11px; color: #aaa; }
+
+.an-lb-bar-wrap { flex: 1; min-width: 80px; }
+.an-lb-track {
+  height: 5px;
+  background: #f2efea;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.an-lb-fill {
+  height: 100%;
+  background: #D42B2B;
+  border-radius: 3px;
+  width: 0; /* animated by JS */
+}
+.an-lb-row--top .an-lb-fill { background: #D42B2B; }
+
+.an-lb-count {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  flex-shrink: 0;
+  min-width: 60px;
+  justify-content: flex-end;
+}
+.an-lb-num-big { font-size: 18px; font-weight: 700; color: #D42B2B; }
+.an-lb-unit    { font-size: 11px; color: #bbb; }
+
+/* Empty state */
+.an-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: #ccc;
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* Responsive table scroll on small screens */
+@media (max-width: 560px) {
+  .an-table-card { overflow-x: auto; }
+  .an-post-link  { max-width: 140px; }
+}
+</style>
+
+{% endblock %}

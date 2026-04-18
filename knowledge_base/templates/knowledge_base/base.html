@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ACT InnerCircle{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    /* ... (I have kept your CSS exactly as it was to ensure the design doesn't break) ... */
+    :root {
+      --red:         #D42B2B;
+      --red-dark:   #B01E1E;
+      --red-light:  #FFF0F0;
+      --red-mid:     #F9DADA;
+      --ink:         #1A1A2E;
+      --ink-2:       #3D3D56;
+      --ink-3:       #6B6B85;
+      --ink-4:       #9999AF;
+      --surface:     #FFFFFF;
+      --bg:          #F4F5F7;
+      --bg-2:        #ECEEF2;
+      --border:      #E4E6EC;
+      --border-2:    #D0D3DE;
+      --shadow-sm:   0 1px 3px rgba(26,26,46,.06), 0 1px 2px rgba(26,26,46,.04);
+      --shadow-md:   0 4px 12px rgba(26,26,46,.08), 0 2px 4px rgba(26,26,46,.04);
+      --shadow-lg:   0 12px 32px rgba(26,26,46,.12), 0 4px 8px rgba(26,26,46,.06);
+      --radius-sm:   6px;
+      --radius-md:   10px;
+      --radius-lg:   16px;
+      --radius-xl:   24px;
+      --nav-h:       64px;
+      --sidebar-w:   240px;
+      --rsidebar-w: 288px;
+      --font:        'DM Sans', system-ui, sans-serif;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+    button, input, textarea, select {
+      font-family: var(--font);
+      font-size: 14px;
+    }
+
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--nav-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      display: flex; align-items: center;
+      padding: 0 24px; gap: 16px;
+    }
+    .navbar-brand {
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0;
+    }
+    .navbar-logo {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--red);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 18px;
+      letter-spacing: -1px;
+    }
+    .navbar-name {
+      font-weight: 600; font-size: 16px; color: var(--ink);
+      letter-spacing: -.2px;
+    }
+    .navbar-name span { color: var(--red); }
+
+    .navbar-search {
+      flex: 1; max-width: 440px; margin: 0 auto;
+      position: relative;
+    }
+    .navbar-search input {
+      width: 100%;
+      padding: 9px 16px 9px 40px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      font-size: 14px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .navbar-search input::placeholder { color: var(--ink-4); }
+    .navbar-search input:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(212,43,43,.1);
+      background: var(--surface);
+    }
+    .navbar-search-icon {
+      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+      color: var(--ink-4); font-size: 15px; pointer-events: none;
+    }
+
+    .navbar-right {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: auto;
+    }
+    .nav-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 8px;
+      font-size: 13.5px; font-weight: 500;
+      border: none; cursor: pointer;
+      transition: background .15s, color .15s, transform .1s;
+    }
+    .nav-btn:active { transform: scale(.97); }
+    .nav-btn-ghost { background: transparent; color: var(--ink-2); }
+    .nav-btn-ghost:hover { background: var(--bg); }
+    .nav-btn-primary { background: var(--red); color: white; }
+    .nav-btn-primary:hover { background: var(--red-dark); }
+
+    .nav-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--red); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; flex-shrink: 0;
+      overflow: hidden;
+      border: 2px solid transparent;
+      transition: border-color .2s;
+    }
+    .nav-avatar:hover { border-color: var(--red); }
+    .nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .hamburger {
+      display: none; flex-direction: column; gap: 5px;
+      cursor: pointer; padding: 4px; background: none; border: none;
+    }
+    .hamburger span {
+      display: block; width: 22px; height: 2px;
+      background: var(--ink); border-radius: 2px;
+      transition: .2s;
+    }
+
+    .page-shell {
+      display: flex;
+      padding-top: var(--nav-h);
+      min-height: 100vh;
+    }
+
+    .sidebar-left {
+      position: fixed; top: var(--nav-h); left: 0; bottom: 0;
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 20px 12px;
+      display: flex; flex-direction: column; gap: 2px;
+      z-index: 50;
+      transition: transform .3s;
+    }
+    .sidebar-label {
+      font-size: 10.5px; font-weight: 600; letter-spacing: .8px;
+      color: var(--ink-4); text-transform: uppercase;
+      padding: 12px 12px 4px;
+    }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: var(--radius-md);
+      font-size: 14px; font-weight: 500; color: var(--ink-2);
+      transition: background .15s, color .15s;
+      cursor: pointer;
+    }
+    .sidebar-link:hover { background: var(--bg); color: var(--ink); }
+    .sidebar-link.active {
+      background: var(--red-light); color: var(--red);
+    }
+    .sidebar-link .icon { font-size: 17px; flex-shrink: 0; }
+    .sidebar-badge {
+      margin-left: auto; background: var(--red); color: white;
+      font-size: 10px; font-weight: 600; padding: 2px 6px;
+      border-radius: 10px; min-width: 18px; text-align: center;
+    }
+
+    .main-content {
+      flex: 1;
+      margin-left: var(--sidebar-w);
+      margin-right: var(--rsidebar-w);
+      padding: 28px 32px;
+      max-width: 100%;
+    }
+
+    .sidebar-right {
+      position: fixed; top: var(--nav-h); right: 0; bottom: 0;
+      width: var(--rsidebar-w);
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+    .widget { display: flex; flex-direction: column; gap: 10px; }
+    .widget-title {
+      font-size: 12px; font-weight: 600; letter-spacing: .7px;
+      text-transform: uppercase; color: var(--ink-4);
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .flash-wrap { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+    .flash {
+      padding: 12px 16px; border-radius: var(--radius-md);
+      font-size: 14px; font-weight: 500;
+      display: flex; align-items: center; gap: 10px;
+      animation: fadeSlide .3s ease;
+    }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .flash-success { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+    .flash-error   { background: #FFF0F0; color: #991B1B; border: 1px solid #FECACA; }
+    .flash-info    { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
+    .flash-warning { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+    .flash-default { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .post-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .post-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+    .post-thumb {
+      width: 100%; height: 180px;
+      object-fit: cover;
+      background: linear-gradient(135deg, var(--red-mid) 0%, var(--bg-2) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px; flex-shrink: 0;
+      position: relative; overflow: hidden;
+    }
+    .post-thumb-placeholder {
+      width: 100%; height: 180px;
+      background: linear-gradient(135deg, #FFF0F0 0%, #F4F5F7 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; color: var(--red); opacity: .4;
+      flex-shrink: 0;
+    }
+    .post-body { padding: 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .post-meta-top {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .post-title {
+      font-size: 17px; font-weight: 600; color: var(--ink);
+      line-height: 1.4; letter-spacing: -.2px;
+      transition: color .15s;
+    }
+    .post-card:hover .post-title { color: var(--red); }
+    .post-excerpt {
+      font-size: 13.5px; color: var(--ink-3); line-height: 1.6;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .post-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .post-author {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .post-author-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--red); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; flex-shrink: 0; overflow: hidden;
+    }
+    .post-author-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .post-author-name { font-size: 13px; font-weight: 500; color: var(--ink-2); }
+    .post-author-date { font-size: 12px; color: var(--ink-4); }
+    .post-stats {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .post-stat {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 12.5px; color: var(--ink-4);
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 20px;
+      font-size: 11.5px; font-weight: 600; letter-spacing: .1px;
+    }
+    .badge-red     { background: var(--red-light); color: var(--red); }
+    .badge-green   { background: #F0FDF4; color: #15803D; }
+    .badge-amber   { background: #FFFBEB; color: #B45309; }
+    .badge-gray    { background: var(--bg-2); color: var(--ink-3); }
+    .badge-blue    { background: #EFF6FF; color: #1D4ED8; }
+    .badge-draft   { background: var(--bg-2); color: var(--ink-3); }
+    .badge-pending { background: #FFFBEB; color: #B45309; }
+    .badge-published { background: #F0FDF4; color: #15803D; }
+    .badge-rejected  { background: var(--red-light); color: var(--red); }
+
+    .chip {
+      display: inline-flex; align-items: center;
+      padding: 4px 12px; border-radius: 20px;
+      font-size: 12.5px; font-weight: 500;
+      border: 1px solid var(--border);
+      color: var(--ink-3); background: var(--surface);
+      cursor: pointer; transition: all .15s;
+    }
+    .chip:hover, .chip.active {
+      background: var(--red); color: white; border-color: var(--red);
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: var(--radius-md);
+      font-size: 14px; font-weight: 500;
+      border: none; cursor: pointer;
+      transition: background .15s, box-shadow .15s, transform .1s;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary {
+      background: var(--red); color: white;
+      box-shadow: 0 1px 3px rgba(212,43,43,.35);
+    }
+    .btn-primary:hover {
+      background: var(--red-dark);
+      box-shadow: 0 4px 12px rgba(212,43,43,.4);
+    }
+    .btn-secondary {
+      background: var(--surface); color: var(--ink-2);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--bg); }
+    .btn-ghost { background: transparent; color: var(--ink-2); padding: 9px 12px; }
+    .btn-ghost:hover { background: var(--bg); }
+    .btn-success {
+      background: #16A34A; color: white;
+      box-shadow: 0 1px 3px rgba(22,163,74,.3);
+    }
+    .btn-success:hover { background: #15803D; }
+    .btn-warning { background: #F59E0B; color: white; }
+    .btn-warning:hover { background: #D97706; }
+    .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: var(--radius-sm); }
+    .btn-lg { padding: 12px 24px; font-size: 15px; border-radius: var(--radius-md); }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label {
+      font-size: 13.5px; font-weight: 600; color: var(--ink-2);
+    }
+    .form-label .req { color: var(--red); margin-left: 2px; }
+    .form-control {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 14px; color: var(--ink);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+    .form-control::placeholder { color: var(--ink-4); }
+    .form-control:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(212,43,43,.1);
+      background: var(--surface);
+    }
+    .form-hint { font-size: 12px; color: var(--ink-4); }
+    .form-error { font-size: 12.5px; color: var(--red); }
+
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 20px; font-weight: 600; color: var(--ink);
+      letter-spacing: -.3px;
+    }
+    .section-subtitle { font-size: 14px; color: var(--ink-3); margin-top: 2px; }
+
+    .ai-box {
+      background: linear-gradient(135deg, #FFF8F0 0%, #FFF0F5 100%);
+      border: 1px solid #F4C5C5;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .ai-icon {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: var(--red); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .ai-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .6px;
+      text-transform: uppercase; color: var(--red); margin-bottom: 3px;
+    }
+    .ai-text { font-size: 13.5px; color: var(--ink-2); line-height: 1.65; }
+
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+    .empty-state {
+      text-align: center; padding: 48px 24px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .empty-state-icon { font-size: 48px; opacity: .35; }
+    .empty-state-title { font-size: 17px; font-weight: 600; color: var(--ink-2); }
+    .empty-state-text { font-size: 14px; color: var(--ink-4); max-width: 320px; }
+
+    .post-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .post-list { display: flex; flex-direction: column; gap: 16px; }
+
+    .logout-form { display: inline; }
+
+    @media (max-width: 1200px) {
+      .sidebar-right { display: none; }
+      .main-content { margin-right: 0; }
+    }
+    @media (max-width: 768px) {
+      .sidebar-left {
+        transform: translateX(-100%);
+      }
+      .sidebar-left.open { transform: translateX(0); }
+      .main-content { margin-left: 0; padding: 16px; }
+      .hamburger { display: flex; }
+      .navbar-name { display: none; }
+      .post-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .navbar-search { display: none; }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar">
+  <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+
+  <a href="{% url 'knowledge_base:post_list' %}" class="navbar-brand"></a>
+    <div class="navbar-logo">⚡</div>
+    <span class="navbar-name">ACT <span>InnerCircle</span></span>
+  </a>
+
+  <form class="navbar-search" action="{% url 'knowledge_base:search' %}" method="get">
+    <span class="navbar-search-icon">🔍</span>
+    <input type="text" name="q" placeholder="Search articles, topics, people…" autocomplete="off">
+  </form>
+
+  <div class="navbar-right">
+    {% if user.is_authenticated %}
+      {% if user.is_admin_user %}
+        <a href="{% url 'knowledge_base:pending_comments' %}" class="btn nav-btn nav-btn-ghost" title="Pending Comments">
+          💬 Queue 
+          {% if pending_count > 0 %}
+            <span class="sidebar-badge" style="margin-left:4px">{{ pending_count }}</span>
+          {% endif %}
+        </a>
+      {% endif %}
+
+      <a href="{% url 'knowledge_base:post_create' %}" class="btn nav-btn nav-btn-primary">
+        ✦ Write Post
+      </a>
+      <a href="{% url 'knowledge_base:profile' %}" class="nav-avatar" title="{{ user.get_full_name }}">
+        {% if user.avatar %}
+          <img src="{{ user.avatar.url }}" alt="avatar">
+        {% else %}
+          {{ user.first_name|first|upper }}
+        {% endif %}
+      </a>
+    {% else %}
+      <a href="{% url 'knowledge_base:login' %}" class="btn nav-btn nav-btn-ghost">Sign in</a>
+      <a href="{% url 'knowledge_base:register' %}" class="btn nav-btn nav-btn-primary">Join free</a>
+    {% endif %}
+  </div>
+</nav>
+
+<div class="page-shell">
+
+  <aside class="sidebar-left" id="sidebarLeft">
+    <div class="sidebar-label">Discover</div>
+    <a href="{% url 'knowledge_base:post_list' %}" class="sidebar-link {% block nav_home %}{% endblock %}">
+      <span class="icon">🏠</span> Home
+    </a>
+    <a href="{% url 'knowledge_base:search' %}" class="sidebar-link {% block nav_search %}{% endblock %}">
+      <span class="icon">🔍</span> Explore
+    </a>
+
+    {% if user.is_authenticated %}
+    <div class="divider" style="margin:8px 0"></div>
+    <div class="sidebar-label">My Space</div>
+    <a href="{% url 'knowledge_base:dashboard' %}" class="sidebar-link {% block nav_dash %}{% endblock %}">
+      <span class="icon">📋</span> Dashboard
+    </a>
+    <a href="{% url 'knowledge_base:my_workspace' %}" class="sidebar-link {% block nav_workspace %}{% endblock %}">
+      <span class="icon">💼</span> My Workspace
+    </a>
+    <a href="{% url 'knowledge_base:post_create' %}" class="sidebar-link {% block nav_write %}{% endblock %}">
+      <span class="icon">✏️</span> Write Post
+    </a>
+    <a href="{% url 'knowledge_base:profile' %}" class="sidebar-link {% block nav_profile %}{% endblock %}">
+      <span class="icon">👤</span> Profile
+    </a>
+
+    {% if user.is_admin_user %}
+    <div class="divider" style="margin:8px 0"></div>
+    <div class="sidebar-label">Admin</div>
+    <a href="{% url 'knowledge_base:approval_queue' %}" class="sidebar-link {% block nav_queue %}{% endblock %}">
+      <span class="icon">⏳</span> Approval Queue
+    </a>
+    <a href="{% url 'knowledge_base:pending_comments' %}" class="sidebar-link {% block nav_comments %}{% endblock %}">
+      <span class="icon">💬</span> Comment Queue
+      {% if pending_count > 0 %}
+        <span class="sidebar-badge">{{ pending_count }}</span>
+      {% endif %}
+    </a>
+    <a href="{% url 'admin:index' %}" class="sidebar-link"></a>
+      <span class="icon">⚙️</span> Admin Panel
+    </a>
+    {% endif %}
+
+    <div class="divider" style="margin:8px 0"></div>
+    <form method="post" action="{% url 'knowledge_base:logout' %}" class="logout-form">
+      {% csrf_token %}
+      <button type="submit" class="sidebar-link" style="width:100%; background:none; border:none; text-align:left; cursor:pointer; color:var(--ink-3);">
+        <span class="icon">🚪</span> Sign out
+      </button>
+    </form>
+    {% endif %}
+  </aside>
+
+  <main class="main-content">
+    {% if messages %}
+    <div class="flash-wrap">
+      {% for message in messages %}
+        <div class="flash flash-default">
+          {% if 'success' in message.tags %}✓{% elif 'error' in message.tags %}✕{% elif 'warning' in message.tags %}⚠{% else %}ℹ{% endif %}
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <aside class="sidebar-right">
+    {% block right_sidebar %}
+    <div class="widget">
+      <div class="widget-title">🔥 Trending</div>
+      <p style="font-size:13px;color:var(--ink-4);text-align:center;padding:12px 0">
+        Visit the home page to see trending posts
+      </p>
+    </div>
+    {% endblock %}
+  </aside>
+
+</div>
+
+<script>
+  function toggleSidebar() {
+    document.getElementById('sidebarLeft').classList.toggle('open');
+  }
+  document.addEventListener('click', function(e) {
+    const sb = document.getElementById('sidebarLeft');
+    if (window.innerWidth <= 768 && sb.classList.contains('open')) {
+      if (!sb.contains(e.target) && !e.target.closest('.hamburger')) {
+        sb.classList.remove('open');
+      }
+    }
+  });
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

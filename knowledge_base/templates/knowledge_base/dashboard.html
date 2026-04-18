@@ -1,0 +1,170 @@
+{% extends "knowledge_base/base.html" %}
+{% block title %}My Dashboard — ACT InnerCircle{% endblock %}
+{% block nav_dash %}active{% endblock %}
+
+{% block right_sidebar %}
+<div class="widget">
+  <div class="widget-title">👤 My Profile</div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0;text-align:center;">
+    <div class="nav-avatar" style="width:56px;height:56px;font-size:22px;">
+      {% if user.avatar %}<img src="{{ user.avatar.url }}" alt="">
+      {% else %}{{ user.first_name|first|upper }}{% endif %}
+    </div>
+    <div>
+      <div style="font-weight:600;font-size:15px;">{{ user.get_full_name }}</div>
+      <div style="font-size:12px;color:var(--ink-4);">{{ user.email }}</div>
+    </div>
+    <span class="badge {% if user.is_admin_user %}badge-red{% else %}badge-blue{% endif %}">
+      {{ user.get_role_display }}
+    </span>
+  </div>
+</div>
+
+<div class="widget">
+  <div class="widget-title">📊 Post Summary</div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:13.5px;">
+      <span style="color:var(--ink-3);">📝 Drafts</span>
+      <span class="badge badge-gray">{{ draft_posts.count }}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:13.5px;">
+      <span style="color:var(--ink-3);">⏳ Pending</span>
+      <span class="badge badge-pending">{{ pending_posts.count }}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:13.5px;">
+      <span style="color:var(--ink-3);">✅ Published</span>
+      <span class="badge badge-published">{{ published_posts.count }}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:13.5px;">
+      <span style="color:var(--ink-3);">❌ Rejected</span>
+      <span class="badge badge-rejected">{{ rejected_posts.count }}</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div>
+    <h1 class="section-title">My Dashboard</h1>
+    <p class="section-subtitle">Manage your articles and track their progress</p>
+  </div>
+  <a href="{% url 'knowledge_base:post_create' %}" class="btn btn-primary">✦ New Post</a>
+</div>
+
+<!-- Needs revision first (highest priority) -->
+{% if rejected_posts %}
+<div style="margin-bottom:20px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <h2 style="font-size:16px;font-weight:600;">❌ Needs Revision</h2>
+    <span class="badge badge-rejected">{{ rejected_posts.count }}</span>
+  </div>
+  <div class="post-list">
+    {% for post in rejected_posts %}
+    <div class="card" style="padding:20px;border-left:3px solid var(--red);">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:15px;margin-bottom:6px;">{{ post.title }}</div>
+          {% if post.rejection_reason %}
+          <div style="display:flex;gap:8px;align-items:flex-start;background:var(--red-light);
+                      border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px;">
+            <span style="color:var(--red);font-size:13px;">⚠ <strong>Feedback:</strong> {{ post.rejection_reason }}</span>
+          </div>
+          {% endif %}
+          <div style="font-size:12.5px;color:var(--ink-4);">Updated {{ post.updated_at|date:"d M Y" }}</div>
+        </div>
+        <a href="{% url 'knowledge_base:post_submit' post.slug %}" class="btn btn-primary btn-sm">Resubmit</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Pending approval -->
+{% if pending_posts %}
+<div style="margin-bottom:20px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <h2 style="font-size:16px;font-weight:600;">⏳ Awaiting Approval</h2>
+    <span class="badge badge-pending">{{ pending_posts.count }}</span>
+  </div>
+  <div class="post-list">
+    {% for post in pending_posts %}
+    <div class="card" style="padding:20px;border-left:3px solid #F59E0B;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:600;font-size:15px;margin-bottom:4px;">{{ post.title }}</div>
+          <div style="font-size:12.5px;color:var(--ink-4);">Submitted {{ post.updated_at|date:"d M Y" }} · Waiting for admin review</div>
+        </div>
+        <span class="badge badge-pending">⏳ Pending</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Drafts -->
+{% if draft_posts %}
+<div style="margin-bottom:20px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <h2 style="font-size:16px;font-weight:600;">📝 Drafts</h2>
+    <span class="badge badge-gray">{{ draft_posts.count }}</span>
+  </div>
+  <div class="post-list">
+    {% for post in draft_posts %}
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:600;font-size:15px;margin-bottom:4px;">{{ post.title }}</div>
+          <div style="font-size:12.5px;color:var(--ink-4);">Last edited {{ post.updated_at|date:"d M Y" }}</div>
+        </div>
+        <a href="{% url 'knowledge_base:post_submit' post.slug %}" class="btn btn-secondary btn-sm">
+          Submit for Review →
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Published -->
+{% if published_posts %}
+<div style="margin-bottom:20px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <h2 style="font-size:16px;font-weight:600;">✅ Published</h2>
+    <span class="badge badge-published">{{ published_posts.count }}</span>
+  </div>
+  <div class="post-list">
+    {% for post in published_posts %}
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;">
+          <a href="{% url 'knowledge_base:post_detail' post.slug %}"
+             style="font-weight:600;font-size:15px;color:var(--red);">{{ post.title }}</a>
+          <div style="font-size:12.5px;color:var(--ink-4);margin-top:3px;">Published {{ post.published_at|date:"d M Y" }}</div>
+        </div>
+        <div class="post-stats">
+          <span class="post-stat">👍 {{ post.upvote_count }}</span>
+          <span class="post-stat">💬 {{ post.comment_count }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Empty state -->
+{% if not draft_posts and not pending_posts and not published_posts and not rejected_posts %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-state-icon">✨</div>
+    <div class="empty-state-title">Your dashboard is empty</div>
+    <div class="empty-state-text">Share your knowledge with the ACT team. Write your first article to get started.</div>
+    <a href="{% url 'knowledge_base:post_create' %}" class="btn btn-primary" style="margin-top:8px;">Write your first post</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

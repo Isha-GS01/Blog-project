@@ -1,0 +1,143 @@
+{% extends "knowledge_base/base.html" %}
+{% block title %}Home — ACT InnerCircle{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  .post-thumb {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--radius-md, 8px) var(--radius-md, 8px) 0 0;
+  }
+  .post-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+  }
+  .post-card:hover .post-thumb img {
+    transform: scale(1.04);
+  }
+</style>
+{% endblock %}
+
+{% block right_sidebar %}
+<div class="widget">
+  <div class="widget-title">🔥 Trending Now</div>
+  {% for post in posts|slice:":5" %}
+  <a href="{% url 'knowledge_base:post_detail' post.slug %}"
+     style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);text-decoration:none;">
+    <span style="font-size:20px;font-weight:700;color:var(--border-2);min-width:20px;line-height:1.3;">{{ forloop.counter }}</span>
+    <div>
+      <div style="font-size:13px;font-weight:500;color:var(--ink);line-height:1.4;margin-bottom:3px;">{{ post.title|truncatechars:55 }}</div>
+      <div style="font-size:11.5px;color:var(--ink-4);">👍 {{ post.upvotes.count }}</div>
+    </div>
+  </a>
+  {% empty %}
+  <p style="font-size:13px;color:var(--ink-4);padding:8px 0">No posts yet.</p>
+  {% endfor %}
+</div>
+
+<div class="widget">
+  <div class="widget-title">📂 Categories</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;">
+    <a href="{% url 'knowledge_base:post_list' %}"
+       class="chip {% if not selected_category %}active{% endif %}">All</a>
+    {% for cat in categories %}
+    <a href="?category={{ cat.slug }}"
+       class="chip {% if selected_category == cat.slug %}active{% endif %}">{{ cat.name }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{% if user.is_authenticated %}
+<div class="widget">
+  <div class="widget-title">📊 Your Stats</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+    <div style="background:var(--bg);border-radius:var(--radius-md);padding:12px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;color:var(--red);">{{ user.published_post_count }}</div>
+      <div style="font-size:11px;color:var(--ink-4);margin-top:2px;">Published</div>
+    </div>
+    <div style="background:var(--bg);border-radius:var(--radius-md);padding:12px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;color:var(--red);">{{ user.role|slice:":1" }}</div>
+      <div style="font-size:11px;color:var(--ink-4);margin-top:2px;">{{ user.get_role_display }}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div>
+    <h1 class="section-title">Knowledge Hub</h1>
+    <p class="section-subtitle">Insights and articles from the ACT team</p>
+  </div>
+  {% if user.is_authenticated %}
+  <a href="{% url 'knowledge_base:post_create' %}" class="btn btn-primary">✦ Write Post</a>
+  {% endif %}
+</div>
+
+{% if posts %}
+<div class="post-grid">
+  {% for post in posts %}
+  <a href="{% url 'knowledge_base:post_detail' post.slug %}" style="display:contents;">
+    <article class="post-card">
+
+      {% if post.image_file %}
+      <div class="post-thumb">
+        <img src="{{ post.image_file.url }}" alt="{{ post.title }}">
+      </div>
+      {% else %}
+      <div class="post-thumb-placeholder">
+        {% if post.category %}{{ post.category.name|first }}{% else %}✦{% endif %}
+      </div>
+      {% endif %}
+
+      <div class="post-body">
+        <div class="post-meta-top">
+          {% if post.category %}
+          <span class="badge badge-blue">{{ post.category.name }}</span>
+          {% endif %}
+          {% if forloop.counter <= 3 %}
+          <span class="badge badge-red">🔥 Trending</span>
+          {% endif %}
+        </div>
+
+        <h2 class="post-title">{{ post.title }}</h2>
+
+        {% if post.ai_summary %}
+        <p class="post-excerpt">🤖 {{ post.ai_summary }}</p>
+        {% else %}
+        <p class="post-excerpt">{{ post.body|truncatewords:28 }}</p>
+        {% endif %}
+      </div>
+
+      <div class="post-footer">
+        <div class="post-author">
+          <div class="post-author-avatar">
+            {% if post.author.avatar %}
+            <img src="{{ post.author.avatar.url }}" alt="">
+            {% else %}
+            {{ post.author.first_name|first|upper }}
+            {% endif %}
+          </div>
+          <div>
+            <div class="post-author-name">{{ post.author.get_full_name }}</div>
+            <div class="post-author-date">{{ post.published_at|date:"d M Y" }}</div>
+          </div>
+        </div>
+        <div class="post-stats">
+          <span class="post-stat">👍 {{ post.upvotes.count }}</span>
+          <span class="post-stat">💬 {{ post.comments.count }}</span>
+        </div>
+      </div>
+
+    </article>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

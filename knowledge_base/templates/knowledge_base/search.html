@@ -1,0 +1,115 @@
+{% extends "knowledge_base/base.html" %}
+{% block title %}Search{% if query %}: {{ query }}{% endif %} — ACT InnerCircle{% endblock %}
+{% block nav_search %}active{% endblock %}
+
+{% block right_sidebar %}
+<div class="widget">
+  <div class="widget-title">📂 Filter by Category</div>
+  <div style="display:flex;flex-direction:column;gap:4px;">
+    <a href="{% url 'knowledge_base:search' %}{% if query %}?q={{ query }}{% endif %}"
+       class="sidebar-link {% if not selected_category %}active{% endif %}">All categories</a>
+    {% for cat in categories %}
+    <a href="?q={{ query }}&category={{ cat.slug }}"
+       class="sidebar-link {% if selected_category == cat.slug %}active{% endif %}">
+       {{ cat.name }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+
+{% if query %}
+<div class="widget">
+  <div class="widget-title">📊 Results</div>
+  <div style="text-align:center;padding:12px 0;">
+    <div style="font-size:36px;font-weight:700;color:var(--red);">{{ results.count }}</div>
+    <div style="font-size:13px;color:var(--ink-4);margin-top:2px;">articles found</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <div>
+    <h1 class="section-title">
+      {% if query %}Results for "{{ query }}"{% else %}Explore Articles{% endif %}
+    </h1>
+    <p class="section-subtitle">Search the ACT InnerCircle knowledge base</p>
+  </div>
+</div>
+
+<!-- Big search bar -->
+<div class="card" style="padding:20px;margin-bottom:28px;">
+  <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;">
+    <div style="flex:1;position:relative;min-width:200px;">
+      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;">🔍</span>
+      <input type="text" name="q" value="{{ query }}"
+             class="form-control" style="padding-left:42px;font-size:15px;"
+             placeholder="Search articles by title, content, or topic…" autofocus>
+    </div>
+    <select name="category" class="form-control" style="max-width:200px;">
+      <option value="">All categories</option>
+      {% for cat in categories %}
+      <option value="{{ cat.slug }}" {% if selected_category == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary">Search</button>
+  </form>
+</div>
+
+<!-- Results -->
+{% if query %}
+  {% if results %}
+  <div class="post-list">
+    {% for post in results %}
+    <a href="{% url 'knowledge_base:post_detail' post.slug %}" style="display:contents;">
+      <article class="post-card" style="flex-direction:row;align-items:stretch;">
+        <!-- Color accent -->
+        <div style="width:6px;background:var(--red);border-radius:var(--radius-lg) 0 0 var(--radius-lg);flex-shrink:0;"></div>
+        <div class="post-body" style="flex-direction:row;align-items:center;gap:20px;flex:1;">
+          <!-- Left: text -->
+          <div style="flex:1;">
+            <div class="post-meta-top" style="margin-bottom:8px;">
+              {% if post.category %}<span class="badge badge-blue">{{ post.category.name }}</span>{% endif %}
+            </div>
+            <h2 class="post-title" style="margin-bottom:6px;">{{ post.title }}</h2>
+            <p class="post-excerpt" style="-webkit-line-clamp:2;">
+              {% if post.ai_summary %}{{ post.ai_summary }}{% else %}{{ post.body|truncatewords:25 }}{% endif %}
+            </p>
+          </div>
+          <!-- Right: meta -->
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+            <div class="post-author" style="flex-direction:column;align-items:flex-end;gap:3px;">
+              <div class="post-author-name">{{ post.author.get_full_name }}</div>
+              <div class="post-author-date">{{ post.published_at|date:"d M Y" }}</div>
+            </div>
+            <div class="post-stats">
+              <span class="post-stat">👍 {{ post.upvote_count }}</span>
+              <span class="post-stat">💬 {{ post.comment_count }}</span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <div class="empty-state-title">No results for "{{ query }}"</div>
+      <div class="empty-state-text">Try different keywords or browse all articles from the home page.</div>
+      <a href="{% url 'knowledge_base:post_list' %}" class="btn btn-secondary" style="margin-top:8px;">Browse all posts</a>
+    </div>
+  </div>
+  {% endif %}
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-state-icon">🔍</div>
+    <div class="empty-state-title">What are you looking for?</div>
+    <div class="empty-state-text">Search for articles, guides, tips, or topics across the entire knowledge base.</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
