@@ -1,143 +1,172 @@
 {% extends "knowledge_base/base.html" %}
-{% block title %}Home — ACT InnerCircle{% endblock %}
+{% load static %}
+
+{% block title %}Home — ACT Connect{% endblock %}
 {% block nav_home %}active{% endblock %}
 
-{% block extra_css %}
-<style>
-  .post-thumb {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    border-radius: var(--radius-md, 8px) var(--radius-md, 8px) 0 0;
-  }
-  .post-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.3s ease;
-  }
-  .post-card:hover .post-thumb img {
-    transform: scale(1.04);
-  }
-</style>
-{% endblock %}
-
-{% block right_sidebar %}
-<div class="widget">
-  <div class="widget-title">🔥 Trending Now</div>
-  {% for post in posts|slice:":5" %}
-  <a href="{% url 'knowledge_base:post_detail' post.slug %}"
-     style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);text-decoration:none;">
-    <span style="font-size:20px;font-weight:700;color:var(--border-2);min-width:20px;line-height:1.3;">{{ forloop.counter }}</span>
-    <div>
-      <div style="font-size:13px;font-weight:500;color:var(--ink);line-height:1.4;margin-bottom:3px;">{{ post.title|truncatechars:55 }}</div>
-      <div style="font-size:11.5px;color:var(--ink-4);">👍 {{ post.upvotes.count }}</div>
-    </div>
-  </a>
-  {% empty %}
-  <p style="font-size:13px;color:var(--ink-4);padding:8px 0">No posts yet.</p>
-  {% endfor %}
-</div>
-
-<div class="widget">
-  <div class="widget-title">📂 Categories</div>
-  <div style="display:flex;flex-wrap:wrap;gap:6px;">
-    <a href="{% url 'knowledge_base:post_list' %}"
-       class="chip {% if not selected_category %}active{% endif %}">All</a>
-    {% for cat in categories %}
-    <a href="?category={{ cat.slug }}"
-       class="chip {% if selected_category == cat.slug %}active{% endif %}">{{ cat.name }}</a>
-    {% endfor %}
-  </div>
-</div>
-
-{% if user.is_authenticated %}
-<div class="widget">
-  <div class="widget-title">📊 Your Stats</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-    <div style="background:var(--bg);border-radius:var(--radius-md);padding:12px;text-align:center;">
-      <div style="font-size:22px;font-weight:700;color:var(--red);">{{ user.published_post_count }}</div>
-      <div style="font-size:11px;color:var(--ink-4);margin-top:2px;">Published</div>
-    </div>
-    <div style="background:var(--bg);border-radius:var(--radius-md);padding:12px;text-align:center;">
-      <div style="font-size:22px;font-weight:700;color:var(--red);">{{ user.role|slice:":1" }}</div>
-      <div style="font-size:11px;color:var(--ink-4);margin-top:2px;">{{ user.get_role_display }}</div>
-    </div>
-  </div>
-</div>
-{% endif %}
-{% endblock %}
-
 {% block content %}
-<div class="section-header">
-  <div>
-    <h1 class="section-title">Knowledge Hub</h1>
-    <p class="section-subtitle">Insights and articles from the ACT team</p>
+<div class="post-list-page">
+
+  <header class="post-list-header">
+    <div>
+      <h1 class="post-list-title">📚 Knowledge Base</h1>
+      <p class="post-list-subtitle">Discover insights, best practices, and expertise from your team</p>
+    </div>
+    </header>
+
+  <div class="category-filter">
+    <span class="filter-label">Filter by category:</span>
+    <div class="category-chips">
+      <a href="{% url 'knowledge_base:post_list' %}" class="chip {% if not selected_category %}chip--active{% endif %}">
+        All Topics
+      </a>
+      {% for category in categories %}
+      <a href="?category={{ category.slug }}" class="chip {% if category.slug == selected_category %}chip--active{% endif %}">
+        {{ category.name }}
+      </a>
+      {% endfor %}
+    </div>
   </div>
-  {% if user.is_authenticated %}
-  <a href="{% url 'knowledge_base:post_create' %}" class="btn btn-primary">✦ Write Post</a>
-  {% endif %}
-</div>
 
-{% if posts %}
-<div class="post-grid">
-  {% for post in posts %}
-  <a href="{% url 'knowledge_base:post_detail' post.slug %}" style="display:contents;">
-    <article class="post-card">
-
-      {% if post.image_file %}
-      <div class="post-thumb">
-        <img src="{{ post.image_file.url }}" alt="{{ post.title }}">
-      </div>
-      {% else %}
-      <div class="post-thumb-placeholder">
-        {% if post.category %}{{ post.category.name|first }}{% else %}✦{% endif %}
-      </div>
-      {% endif %}
-
-      <div class="post-body">
-        <div class="post-meta-top">
-          {% if post.category %}
-          <span class="badge badge-blue">{{ post.category.name }}</span>
-          {% endif %}
-          {% if forloop.counter <= 3 %}
-          <span class="badge badge-red">🔥 Trending</span>
-          {% endif %}
-        </div>
-
-        <h2 class="post-title">{{ post.title }}</h2>
-
-        {% if post.ai_summary %}
-        <p class="post-excerpt">🤖 {{ post.ai_summary }}</p>
-        {% else %}
-        <p class="post-excerpt">{{ post.body|truncatewords:28 }}</p>
-        {% endif %}
-      </div>
-
-      <div class="post-footer">
-        <div class="post-author">
-          <div class="post-author-avatar">
-            {% if post.author.avatar %}
-            <img src="{{ post.author.avatar.url }}" alt="">
+  {% if posts %}
+    <div class="posts-grid">
+      {% for post in posts %}
+      <a href="{% url 'knowledge_base:post_detail' post.slug %}" class="post-card-link">
+        <article class="post-card">
+          
+          <div class="post-card-thumb">
+            {% if post.image_file %}
+              <img src="{{ post.image_file.url }}" alt="{{ post.title }}" class="post-thumb-img">
             {% else %}
-            {{ post.author.first_name|first|upper }}
+              <div class="post-thumb-placeholder">
+                <i class="fas fa-file-alt"></i>
+              </div>
+            {% endif %}
+            
+            {% if post.category %}
+            <span class="post-category-badge">{{ post.category.name }}</span>
             {% endif %}
           </div>
-          <div>
-            <div class="post-author-name">{{ post.author.get_full_name }}</div>
-            <div class="post-author-date">{{ post.published_at|date:"d M Y" }}</div>
-          </div>
-        </div>
-        <div class="post-stats">
-          <span class="post-stat">👍 {{ post.upvotes.count }}</span>
-          <span class="post-stat">💬 {{ post.comments.count }}</span>
-        </div>
-      </div>
 
-    </article>
-  </a>
-  {% endfor %}
+          <div class="post-card-body">
+            
+            <h3 class="post-card-title">
+              {{ post.title }}
+            </h3>
+
+            <p class="post-card-excerpt">
+              {{ post.body|truncatewords:20 }}
+            </p>
+
+            {% if post.tags.all %}
+            <div class="post-tags">
+              {% for tag in post.tags.all|slice:":3" %}
+                <span class="tag">{{ tag.name }}</span>
+              {% endfor %}
+              {% if post.tags.count > 3 %}
+                <span class="tag tag--more">+{{ post.tags.count|add:"-3" }} more</span>
+              {% endif %}
+            </div>
+            {% endif %}
+
+          </div>
+
+          <div class="post-card-footer">
+            
+            <div class="post-author-info">
+              <div class="post-author-avatar">
+                {% if post.author.avatar %}
+                  <img src="{{ post.author.avatar.url }}" alt="{{ post.author.get_full_name }}">
+                {% else %}
+                  {{ post.author.first_name|first|upper }}
+                {% endif %}
+              </div>
+              <div class="post-author-meta">
+                <div class="post-author-name">{{ post.author.get_full_name|default:post.author.email }}</div>
+                <div class="post-author-date">{{ post.published_at|date:"d M Y" }}</div>
+              </div>
+            </div>
+
+            <div class="post-stats">
+              <span class="post-stat" title="Views">
+                <i class="fas fa-eye"></i> {{ post.views_count }}
+              </span>
+              <span class="post-stat" title="Upvotes">
+                <i class="fas fa-thumbs-up"></i> {{ post.get_upvote_count }}
+              </span>
+              <span class="post-stat" title="Comments">
+                <i class="fas fa-comments"></i> {{ post.get_comment_count }}
+              </span>
+            </div>
+
+          </div>
+
+        </article>
+      </a>
+      {% endfor %}
+    </div>
+
+  {% else %}
+
+    <div class="empty-state">
+      <div class="empty-state-icon">
+        <i class="fas fa-inbox"></i>
+      </div>
+      <h2 class="empty-state-title">No articles yet</h2>
+      <p class="empty-state-text">Explore other categories or check back later.</p>
+    </div>
+
+  {% endif %}
+
 </div>
-{% endif %}
+
+<style>
+  /* [Keep all your existing styles here - they are still correct for the layout] */
+  .post-list-page { display: flex; flex-direction: column; gap: 2rem; }
+  .post-list-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--neutral-200); flex-wrap: wrap; }
+  .post-list-title { font-size: 2rem; font-weight: 700; color: var(--neutral-900); margin: 0 0 0.5rem; font-family: var(--font-primary); }
+  .post-list-subtitle { font-size: 1rem; color: var(--neutral-600); margin: 0; font-family: var(--font-primary); }
+  .category-filter { display: flex; align-items: center; gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem; }
+  .filter-label { font-size: 0.875rem; font-weight: 600; color: var(--neutral-600); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-primary); }
+  .category-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .chip { display: inline-flex; align-items: center; padding: 0.5rem 1rem; border-radius: 20px; background: var(--neutral-100); color: var(--neutral-700); font-size: 0.875rem; font-weight: 500; text-decoration: none; border: 1px solid var(--neutral-200); transition: all 0.2s ease; cursor: pointer; white-space: nowrap; font-family: var(--font-primary); }
+  .chip:hover { background: var(--neutral-200); border-color: var(--neutral-300); }
+  .chip--active { background: var(--primary); color: white; border-color: var(--primary); }
+  .posts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .post-card-link { text-decoration: none; color: inherit; transition: transform 0.2s ease; }
+  .post-card-link:hover { transform: translateY(-4px); }
+  .post-card { background: var(--neutral-0); border: 1px solid var(--neutral-200); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transition: all 0.3s ease; box-shadow: var(--shadow-sm); height: 100%; }
+  .post-card-link:hover .post-card { border-color: var(--primary); box-shadow: 0 8px 24px rgba(229, 57, 53, 0.15); }
+  .post-card-thumb { position: relative; width: 100%; height: 200px; overflow: hidden; background: linear-gradient(135deg, var(--primary-lightest) 0%, var(--neutral-100) 100%); flex-shrink: 0; }
+  .post-thumb-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+  .post-card-link:hover .post-thumb-img { transform: scale(1.05); }
+  .post-thumb-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: var(--primary); opacity: 0.15; }
+  .post-category-badge { position: absolute; top: 12px; right: 12px; background: rgba(0, 0, 0, 0.7); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; backdrop-filter: blur(4px); font-family: var(--font-primary); }
+  .post-card-body { padding: 1.25rem; flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
+  .post-card-title { font-size: 1.1rem; font-weight: 700; color: var(--neutral-900); line-height: 1.4; margin: 0; transition: color 0.2s ease; font-family: var(--font-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .post-card-link:hover .post-card-title { color: var(--primary); }
+  .post-card-excerpt { font-size: 0.9rem; color: var(--neutral-600); line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-family: var(--font-primary); }
+  .post-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .tag { display: inline-block; padding: 3px 8px; background: var(--neutral-100); color: var(--neutral-600); border-radius: 4px; font-size: 0.75rem; font-weight: 500; font-family: var(--font-primary); }
+  .tag--more { background: var(--primary-lightest); color: var(--primary); }
+  .post-card-footer { padding: 0.75rem 1.25rem 1.25rem; border-top: 1px solid var(--neutral-200); display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--neutral-100); }
+  .post-author-info { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
+  .post-author-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+  .post-author-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .post-author-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .post-author-name { font-size: 0.85rem; font-weight: 600; color: var(--neutral-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-primary); }
+  .post-author-date { font-size: 0.75rem; color: var(--neutral-500); font-family: var(--font-primary); }
+  .post-stats { display: flex; gap: 0.75rem; flex-shrink: 0; }
+  .post-stat { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; color: var(--neutral-600); white-space: nowrap; font-weight: 500; font-family: var(--font-primary); }
+  .post-stat i { color: var(--primary); }
+  .empty-state { grid-column: 1 / -1; text-align: center; padding: 4rem 2rem; background: var(--neutral-100); border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+  .empty-state-icon { font-size: 4rem; color: var(--neutral-300); }
+  .empty-state-title { font-size: 1.5rem; font-weight: 700; color: var(--neutral-900); margin: 0; font-family: var(--font-primary); }
+  .empty-state-text { font-size: 1rem; color: var(--neutral-600); margin: 0 0 1rem; max-width: 360px; font-family: var(--font-primary); }
+
+  @media (max-width: 1200px) { .posts-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); } }
+  @media (max-width: 768px) { .posts-grid { grid-template-columns: 1fr; } .post-list-header { flex-direction: column; align-items: stretch; } .category-filter { overflow-x: auto; -webkit-overflow-scrolling: touch; } }
+</style>
+
 {% endblock %}

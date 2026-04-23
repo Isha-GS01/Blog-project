@@ -1,239 +1,586 @@
 {% extends "knowledge_base/base.html" %}
-{% block title %} {{ post.title }} — ACT InnerCircle {% endblock %}
+{% block title %} {{ post.title }} — ACT Connect {% endblock %}
 
 {% block extra_head %}
-<style>
-  .article-hero {
-    width: 100%;
-    height: 320px;
-    background: linear-gradient(135deg, var(--red-mid) 0%, #F0F0FF 100%);
-    background-size: cover;
-    background-position: center;
-    border-radius: var(--radius-lg);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 84px; margin-bottom: 28px;
-    overflow: hidden;
-    color: white;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  }
-  .article-title {
-    font-family: var(--font-serif);
-    font-size: 34px; color: var(--ink);
-    line-height: 1.2; letter-spacing: -.5px;
-    margin-bottom: 16px;
-  }
-  .article-body {
-    font-size: 16px; line-height: 1.85;
-    color: var(--ink-2);
-    margin-bottom: 40px;
-  }
-  .article-body p { margin-bottom: 1.2em; }
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 
-  /* New Attachment Styles */
-  .attachments-box, .attachments-block {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 24px;
-    margin: 32px 0;
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #faf8f4;
+    --surface: #ffffff;
+    --text:    #1a1814;
+    --muted:   #7a7570;
+    --border:  #e2ddd8;
+    --accent:  #c0392b;
   }
-  .attachment-item {
-    margin-bottom: 15px;
+
+  .post-page {
+    background: var(--bg);
+    min-height: 100vh;
+    padding: 40px 16px 80px;
+  }
+
+  .post-wrap {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  /* ── Title ── */
+  .post-title {
+    font-family: 'Lora', serif;
+    font-size: clamp(2rem, 6vw, 3rem);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text);
+    margin-bottom: 32px;
+    letter-spacing: -0.02em;
+  }
+
+  /* ── COVER IMAGE ── */
+  .cover-image {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #d8cfc5, #e8dfd5);
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .cover-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
     display: block;
   }
-  .media-player {
-    width: 100%;
+
+  .cover-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #999;
+    font-size: 2.5rem;
+  }
+
+  .cover-placeholder span {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: #aaa;
+  }
+
+  /* ── CONTENT BOX - SAME WIDTH AS COVER IMAGE ── */
+  .content-box {
+    background: var(--surface);
     border-radius: 8px;
-    margin-top: 10px;
+    padding: 48px 56px;
+    margin-bottom: 32px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    width: 100%;
+  }
+
+  /* ── Post Content ── */
+  .post-content {
+    font-family: 'Lora', serif;
+    font-size: 1.05rem;
+    line-height: 1.9;
+    color: #3a3835;
+    margin-bottom: 0;
+  }
+
+  .post-content p + p { margin-top: 1.4em; }
+
+  .post-content h2 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin: 1.6em 0 0.8em;
+    color: var(--text);
+  }
+
+  .post-content h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 1.4em 0 0.6em;
+    color: var(--text);
+  }
+
+  .post-content ul,
+  .post-content ol {
+    margin: 1.2em 0;
+    padding-left: 2.2em;
+  }
+
+  .post-content li {
+    margin-bottom: 0.7em;
+    color: #3a3835;
+  }
+
+  .post-content blockquote {
+    padding: 1em 1.5em;
+    border-left: 4px solid var(--accent);
+    margin: 1.5em 0;
+    color: #666;
+    font-style: italic;
+    font-size: 0.98rem;
+  }
+
+  .post-content a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid var(--accent);
+  }
+
+  .post-content a:hover {
+    opacity: 0.8;
+  }
+
+  /* ── Attachments ── */
+  .attachments {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 32px;
+  }
+
+  .attachments-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .attach-links { 
+    display: flex; 
+    gap: 8px; 
+    flex-wrap: wrap; 
+  }
+
+  .attach-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    text-decoration: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text);
+    transition: all 0.2s;
+  }
+
+  .attach-link:hover { 
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── Meta row: Upvote + Author ── */
+  .meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .upvote-form { margin: 0; }
+
+  .upvote-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: 1.5px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .upvote-btn:hover {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .upvote-btn.upvoted {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .upvote-btn.upvoted:hover {
+    background: #a03024;
+  }
+
+  .author-details {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .author-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c0392b, #e67e22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .author-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .author-info { display: flex; flex-direction: column; gap: 2px; }
+
+  .author-name {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 0.92rem;
+    color: var(--text);
+  }
+
+  .author-date {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+
+  /* ── Comments ── */
+  .comments-heading {
+    font-family: 'Lora', serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .comments-count {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .comment-item {
+    display: flex;
+    gap: 12px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .comment-item:last-child { border-bottom: none; }
+
+  .comment-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .comment-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .comment-body { flex: 1; }
+
+  .comment-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+
+  .comment-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .comment-time {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .comment-text {
+    font-family: 'Lora', serif;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: #2c2a27;
+    margin: 0;
+  }
+
+  .no-comments {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 24px 0;
+  }
+
+  /* ── Comment Form ── */
+  .comment-form { margin-top: 28px; }
+
+  .comment-form label {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .comment-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    color: var(--text);
+    resize: vertical;
+    min-height: 90px;
+    outline: none;
+    transition: border-color 0.18s;
+    margin-bottom: 14px;
+  }
+
+  .comment-input:focus { border-color: var(--accent); }
+  .comment-input::placeholder { color: #b5b0aa; }
+
+  .publish-btn {
+    padding: 11px 26px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 0.18s, transform 0.12s;
+  }
+
+  .publish-btn:hover { background: var(--accent); }
+  .publish-btn:active { transform: scale(0.97); }
+
+  /* Login nudge */
+  .login-nudge {
+    text-align: center;
+    padding: 24px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-top: 24px;
+  }
+
+  .login-nudge p {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .login-link {
+    display: inline-block;
+    padding: 10px 24px;
+    background: var(--text);
+    color: var(--bg);
+    border-radius: 6px;
+    text-decoration: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    transition: background 0.18s;
+  }
+
+  .login-link:hover { background: var(--accent); }
+
+  @media (max-width: 640px) {
+    .content-box { padding: 28px; }
+    .meta-row { flex-direction: column; align-items: flex-start; }
+    .cover-image { aspect-ratio: 4 / 3; }
+    .post-wrap { max-width: 100%; }
   }
 </style>
 {% endblock %}
 
-{% block right_sidebar %}
-<div class="widget">
-  <div class="widget-title">✍️ Author</div>
-  <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0;text-align:center;">
-    <div class="nav-avatar" style="width:52px;height:52px;font-size:20px;">
-      {% if post.author.avatar %}
-      <img src="{{ post.author.avatar.url }}" alt="">
-      {% else %}{{ post.author.first_name|first|upper }}{% endif %}
-    </div>
-    <div>
-      <div style="font-weight:600;font-size:15px;">{{ post.author.get_full_name }}</div>
-      {% if post.author.department %}
-      <div style="font-size:12.5px;color:var(--ink-4);margin-top:2px;">{{ post.author.department }}</div>
-      {% endif %}
-    </div>
-    <div style="display:flex;gap:12px;margin-top:8px;">
-      <div style="text-align:center;">
-        <div style="font-weight:700;color:var(--red);">{{ post.author.posts.count }}</div>
-        <div style="font-size:11px;color:var(--ink-4);">Posts</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="widget">
-  <div class="widget-title">ℹ️ Article Info</div>
-  <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--ink-3);">
-    <div style="display:flex;justify-content:space-between;">
-      <span>Published</span>
-      <span style="color:var(--ink-2);font-weight:500;">{{ post.published_at|date:"d M Y" }}</span>
-    </div>
-    {% if post.category %}
-    <div style="display:flex;justify-content:space-between;">
-      <span>Category</span>
-      <span class="badge badge-blue">{{ post.category.name }}</span>
-    </div>
-    {% endif %}
-  </div>
-</div>
-{% endblock %}
+{% block right_sidebar %}{% endblock %}
 
 {% block content %}
-<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-4);margin-bottom:20px;">
-  <a href="{% url 'knowledge_base:post_list' %}" style="color:var(--ink-4);">Home</a>
-  <span>›</span>
-  {% if post.category %}
-  <a href="{% url 'knowledge_base:post_list' %}?category={{ post.category.slug }}" style="color:var(--ink-4);">{{ post.category.name }}</a>
-  <span>›</span>
-  {% endif %}
-  <span style="color:var(--ink-2);">{{ post.title|truncatechars:30 }}</span>
-</div>
+<div class="post-page">
+  <div class="post-wrap">
 
-<article class="card" style="padding:40px;margin-bottom:24px;">
+    <!-- ① Title -->
+    <h1 class="post-title">{{ post.title }}</h1>
 
-  <div class="article-hero" {% if post.image_file %}style="background-image: url('{{ post.image_file.url }}');"{% endif %}>
-    {% if not post.image_file %}
-      {% if post.category %}{{ post.category.name|first }}{% else %}⚡{% endif %}
-    {% endif %}
-  </div>
-
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-    {% if post.category %}<span class="badge badge-blue">{{ post.category.name }}</span>{% endif %}
-    <span class="badge badge-green">✓ Verified Knowledge</span>
-  </div>
-
-  <h1 class="article-title">{{ post.title }}</h1>
-
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:28px;">
-    <div class="post-author">
-      <div class="post-author-avatar" style="width:40px;height:40px;">
-        {% if post.author.avatar %}<img src="{{ post.author.avatar.url }}" alt="">
-        {% else %}{{ post.author.first_name|first|upper }}{% endif %}
-      </div>
-      <div>
-        <div style="font-weight:600;font-size:14px;">{{ post.author.get_full_name }}</div>
-        <div style="font-size:12.5px;color:var(--ink-4);">{{ post.published_at|date:"d M Y" }}</div>
-      </div>
+    <!-- ② COVER IMAGE -->
+    <div class="cover-image">
+      {% if post.image_file %}
+        <img src="{{ post.image_file.url }}" alt="{{ post.title }}">
+      {% else %}
+        <div class="cover-placeholder">
+          🖼️
+          <span>Cover Image</span>
+        </div>
+      {% endif %}
     </div>
-    <div class="post-stats">
-      <span class="post-stat">👍 {{ post.upvote_count }}</span>
-      <span class="post-stat">💬 {{ post.comments.count }}</span>
+
+    <!-- ③ CONTENT BOX - SAME WIDTH AS COVER IMAGE -->
+    <div class="content-box">
+
+      <!-- Post Content -->
+      <div class="post-content">
+        {{ post.body|linebreaks }}
+      </div>
+
+      <!-- Attachments -->
+      {% if post.pdf_file or post.video_file or post.audio_file or post.ppt_file or post.doc_file %}
+      <div class="attachments">
+        <div class="attachments-label">Resources &amp; Downloads</div>
+        <div class="attach-links">
+          {% if post.pdf_file %}<a href="{{ post.pdf_file.url }}" class="attach-link" target="_blank" download>📄 PDF</a>{% endif %}
+          {% if post.video_file %}<a href="{{ post.video_file.url }}" class="attach-link" target="_blank" download>🎥 Video</a>{% endif %}
+          {% if post.audio_file %}<a href="{{ post.audio_file.url }}" class="attach-link" target="_blank" download>🔊 Audio</a>{% endif %}
+          {% if post.ppt_file %}<a href="{{ post.ppt_file.url }}" class="attach-link" target="_blank" download>📊 Slides</a>{% endif %}
+          {% if post.doc_file %}<a href="{{ post.doc_file.url }}" class="attach-link" target="_blank" download>📝 Document</a>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+
     </div>
-  </div>
 
-  <div class="article-body">
-    {{ post.body|linebreaks }}
-  </div>
+    <!-- ④ Upvote (left) + Author details (right) -->
+    <div class="meta-row">
 
-  {% if post.image_file or post.audio_file or post.video_file or post.pdf_file or post.ppt_file or post.doc_file or post.external_url %}
-  <div class="attachments-block">
-    <h4>Attachments</h4>
+      {% if user.is_authenticated %}
+      <form class="upvote-form" method="post" action="{% url 'knowledge_base:post_upvote' post.slug %}">
+        {% csrf_token %}
+        <button type="submit" class="upvote-btn {% if has_upvoted %}upvoted{% endif %}">
+          👍 {% if has_upvoted %}Upvoted · {{ post.get_upvote_count }}{% else %}Upvote · {{ post.get_upvote_count }}{% endif %}
+        </button>
+      </form>
+      {% else %}
+        <div style="font-family:'DM Sans',sans-serif; font-size:0.9rem; color:var(--muted);">👍 {{ post.get_upvote_count }} upvotes</div>
+      {% endif %}
 
-    {% if post.image_file %}
-      <img src="{{ post.image_file.url }}" alt="Post image" style="max-width:100%; border-radius:8px;">
-    {% endif %}
-
-    {% if post.audio_file %}
-      <div class="attachment-item">
-        <strong>Audio</strong>
-        <audio controls style="width:100%;">
-          <source src="{{ post.audio_file.url }}">
-          Your browser does not support audio.
-        </audio>
+      <div class="author-details">
+        <div class="author-avatar">
+          {% if post.author.avatar %}
+            <img src="{{ post.author.avatar.url }}" alt="{{ post.author.get_full_name }}">
+          {% else %}
+            {{ post.author.first_name|first|upper }}
+          {% endif %}
+        </div>
+        <div class="author-info">
+          <span class="author-name">{{ post.author.get_full_name }}</span>
+          <span class="author-date">{{ post.published_at|date:"d F Y" }}</span>
+        </div>
       </div>
-    {% endif %}
 
-    {% if post.video_file %}
-      <div class="attachment-item">
-        <strong>Video</strong>
-        <video controls style="max-width:100%;">
-          <source src="{{ post.video_file.url }}">
-          Your browser does not support video.
-        </video>
-      </div>
-    {% endif %}
-
-    {% if post.pdf_file %}
-      <div class="attachment-item">
-        <a href="{{ post.pdf_file.url }}" target="_blank">📄 Download PDF</a>
-      </div>
-    {% endif %}
-
-    {% if post.ppt_file %}
-      <div class="attachment-item">
-        <a href="{{ post.ppt_file.url }}" target="_blank">📊 Download Presentation</a>
-      </div>
-    {% endif %}
-
-    {% if post.doc_file %}
-      <div class="attachment-item">
-        <a href="{{ post.doc_file.url }}" target="_blank">📝 Download Document</a>
-      </div>
-    {% endif %}
-
-    {% if post.external_url %}
-      <div class="attachment-item">
-        <a href="{{ post.external_url }}" target="_blank" rel="noopener">🔗 External Link</a>
-      </div>
-    {% endif %}
-  </div>
-  {% endif %}
-
-  {% if user.is_authenticated %}
-  <div style="margin-top:40px; padding-top:24px; border-top:1px solid var(--border); display:flex; align-items:center; gap:12px;">
-    <form method="post" action="{% url 'knowledge_base:post_upvote' post.slug %}">
-      {% csrf_token %}
-      <button type="submit" class="btn {% if has_upvoted %}btn-primary{% else %}btn-secondary{% endif %}">
-        {% if has_upvoted %}👍 Upvoted{% else %}👍 Upvote{% endif %} ({{ post.upvote_count }})
-      </button>
-    </form>
-    <span style="font-size:13.5px;color:var(--ink-4);">
-      {% if has_upvoted %}You found this helpful.{% else %}Was this guide helpful?{% endif %}
-    </span>
-  </div>
-  {% endif %}
-
-</article>
-
-<div class="card" style="padding:32px;">
-  <h2 style="font-size:18px;font-weight:600;margin-bottom:24px;">💬 Discussion</h2>
-  
-  {% for comment in comments %}
-  <div class="comment-bubble" style="margin-bottom:16px; background:var(--bg-1); border-radius:12px; padding:16px;">
-    <div class="post-author-avatar" style="width:32px;height:32px;flex-shrink:0;">
-      {% if comment.author.avatar %}<img src="{{ comment.author.avatar.url }}">
-      {% else %}{{ comment.author.first_name|first|upper }}{% endif %}
     </div>
-    <div style="flex:1;">
-      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-        <span style="font-weight:600;font-size:13px;">{{ comment.author.get_full_name }}</span>
-        <span style="font-size:11px;color:var(--ink-4);">{{ comment.created_at|timesince }} ago</span>
-      </div>
-      <p style="font-size:14px; color:var(--ink-2);">{{ comment.body }}</p>
-    </div>
-  </div>
-  {% empty %}
-  <p style="color:var(--ink-4); font-size:14px;">No comments yet.</p>
-  {% endfor %}
 
-  {% if user.is_authenticated %}
-  <form method="post" action="{% url 'knowledge_base:add_comment' post.slug %}" style="margin-top:24px;">
-    {% csrf_token %}
-    <textarea name="body" rows="3" class="form-control" placeholder="Ask a question or provide feedback..." style="margin-bottom:12px;"></textarea>
-    <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
-  </form>
-  {% endif %}
+    <hr class="divider">
+
+    <!-- ⑤ Comments + Post comment form -->
+    <section>
+      <h2 class="comments-heading">
+        Comments
+        <span class="comments-count">{{ post.get_comment_count }} comment{% if post.get_comment_count != 1 %}s{% endif %}</span>
+      </h2>
+
+      {% if comments %}
+        {% for comment in comments %}
+        <div class="comment-item">
+          <div class="comment-avatar">
+            {% if comment.author.avatar %}
+              <img src="{{ comment.author.avatar.url }}" alt="">
+            {% else %}
+              {{ comment.author.first_name|first|upper }}
+            {% endif %}
+          </div>
+          <div class="comment-body">
+            <div class="comment-meta">
+              <span class="comment-name">{{ comment.author.get_full_name }}</span>
+              <span class="comment-time">{{ comment.created_at|timesince }} ago</span>
+            </div>
+            <p class="comment-text">{{ comment.body }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="no-comments">No comments yet — be the first to share your thoughts.</p>
+      {% endif %}
+
+      {% if user.is_authenticated %}
+      <form class="comment-form" method="post" action="{% url 'knowledge_base:add_comment' post.slug %}">
+        {% csrf_token %}
+        <label for="comment-box">Post a Comment</label>
+        <textarea id="comment-box" name="body" class="comment-input" placeholder="Share your thoughts…" required></textarea>
+        <button type="submit" class="publish-btn">Publish Comment</button>
+      </form>
+      {% else %}
+      <div class="login-nudge">
+        <p>Sign in to join the discussion.</p>
+        <a href="{% url 'knowledge_base:login' %}" class="login-link">Sign In</a>
+      </div>
+      {% endif %}
+
+    </section>
+
+  </div>
 </div>
 {% endblock %}

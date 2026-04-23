@@ -1,9 +1,8 @@
-# knowledge_base/models.py
-
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.utils import timezone
 from taggit.managers import TaggableManager
 
 
@@ -112,6 +111,7 @@ class Post(models.Model):
     slug = models.SlugField(max_length=255, unique=True)
     body = models.TextField()
     
+    # Media & Documents
     image_file = models.ImageField(upload_to='uploads/images/', null=True, blank=True)
     audio_file = models.FileField(upload_to='uploads/audio/', null=True, blank=True)
     video_file = models.FileField(upload_to='uploads/video/', null=True, blank=True)
@@ -120,9 +120,9 @@ class Post(models.Model):
     doc_file   = models.FileField(upload_to='uploads/docs/', null=True, blank=True)
     external_url = models.URLField(max_length=500, null=True, blank=True)
 
+    # Relationships
     author = models.ForeignKey(ActUser, on_delete=models.CASCADE, related_name='posts')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='posts')
-
     upvotes = models.ManyToManyField(
         ActUser, 
         through='PostUpvote', 
@@ -130,17 +130,19 @@ class Post(models.Model):
         blank=True
     )
 
+    # Content Status & Analytics
     status = models.CharField(
         max_length=20, 
         choices=Status.choices, 
         default=Status.DRAFT, 
         db_index=True
     )
-    
+    views_count = models.PositiveIntegerField(default=0) # <--- ADDED FIELD
     rejection_reason = models.TextField(blank=True)
     ai_summary = models.TextField(blank=True, null=True)
     tags = TaggableManager(blank=True)
 
+    # Timestamps
     created_at   = models.DateTimeField(auto_now_add=True)
     updated_at   = models.DateTimeField(auto_now=True)
     published_at = models.DateTimeField(null=True, blank=True)
@@ -150,31 +152,23 @@ class Post(models.Model):
         indexes = [
             models.Index(fields=['-published_at']),
             models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['views_count']), # Index added for dashboard performance
         ]
 
     def __str__(self):
         return self.title
 
     def get_upvote_count(self):
-        """Get the number of upvotes on this post."""
         return self.upvotes.count()
 
     def get_comment_count(self):
-        """Get the number of approved comments on this post."""
         return self.comments.filter(is_approved=True).count()
 
     @classmethod
     def search(cls, query, category=None):
         """
-        Search posts by title and body.
-        Returns published posts matching the query, optionally filtered by category.
-        
-        Args:
-            query (str): Search term to find in title or body
-            category (str, optional): Category slug to filter by
-            
-        Returns:
-            QuerySet: Filtered and ordered Post objects
+        Search published posts by title and body.
+        Optional filter by category slug.
         """
         qs = cls.objects.filter(status=cls.Status.PUBLISHED)
         
@@ -230,5 +224,4 @@ class Comment(models.Model):
         return f"Comment by {self.author.email} on {self.post.title}"
 
     def get_author_name(self):
-        """Get the author's full name."""
         return self.author.get_full_name()

@@ -1,160 +1,389 @@
 {% extends "knowledge_base/base.html" %}
-{% block title %}Approval Queue — ACT InnerCircle{% endblock %}
+
+{% block title %}Approval Queue — ACT Connect{% endblock %}
 {% block nav_queue %}active{% endblock %}
 
-{% block right_sidebar %}
-<div class="widget">
-  <div class="widget-title">📋 Queue Info</div>
-  <div style="text-align:center;padding:16px 0;">
-    <div style="font-size:42px;font-weight:700;color:var(--red);">{{ pending_posts.count }}</div>
-    <div style="font-size:13px;color:var(--ink-4);margin-top:4px;">Articles awaiting review</div>
-  </div>
-  <div style="font-size:13px;color:var(--ink-3);background:var(--bg);border-radius:var(--radius-md);padding:12px;line-height:1.6;">
-    Review each post carefully. Approved posts are published instantly and visible to all employees.
-  </div>
-</div>
+{% block extra_head %}
+<style>
+  .queue-section {
+    margin-bottom: var(--spacing-2xl);
+  }
 
-<div class="widget">
-  <div class="widget-title">⚡ Quick Actions</div>
-  <div style="display:flex;flex-direction:column;gap:8px;">
-    <a href="{% url 'knowledge_base:post_list' %}" class="btn btn-secondary btn-sm" style="justify-content:center;">View Published Posts</a>
-   <a href="{% url 'admin:knowledge_base_post_changelist' %}" class="btn btn-secondary btn-sm">Manage in Admin Panel</a>
-</div>
+  .queue-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin-bottom: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+  }
+
+  .queue-title i {
+    color: var(--primary);
+  }
+
+  .notification-badge {
+    background: #e53935;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    min-width: 24px;
+    text-align: center;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+  .pending-post {
+    background: var(--neutral-0);
+    border: 1px solid var(--neutral-200);
+    border-left: 4px solid var(--warning);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+  }
+
+  .pending-post:hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  .post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-md);
+    gap: var(--spacing-md);
+  }
+
+  .post-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin-bottom: var(--spacing-xs);
+    line-height: 1.4;
+  }
+
+  .post-meta {
+    font-size: 13px;
+    color: var(--neutral-500);
+  }
+
+  .post-body-preview {
+    font-size: 14px;
+    color: var(--neutral-700);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--neutral-100);
+    border-radius: var(--radius-md);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .post-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--neutral-200);
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 10px 18px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .action-btn-approve {
+    background: linear-gradient(135deg, var(--success) 0%, #34d399 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  }
+
+  .action-btn-approve:hover {
+    background: linear-gradient(135deg, #059669 0%, var(--success) 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  }
+
+  .action-btn-reject {
+    background: var(--neutral-200);
+    color: var(--neutral-900);
+  }
+
+  .action-btn-reject:hover {
+    background: var(--neutral-300);
+  }
+
+  .action-btn:active {
+    transform: scale(0.98);
+  }
+
+  .reject-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-lg);
+  }
+
+  .reject-modal.open {
+    display: flex;
+  }
+
+  .reject-modal-content {
+    background: var(--neutral-0);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    max-width: 500px;
+    width: 100%;
+    box-shadow: var(--shadow-xl);
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .reject-modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .reject-modal-description {
+    font-size: 14px;
+    color: var(--neutral-600);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .form-group {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .form-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--neutral-900);
+    margin-bottom: var(--spacing-sm);
+    display: block;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--neutral-100);
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    color: var(--neutral-900);
+    outline: none;
+    font-family: var(--font-primary);
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.1);
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: flex-end;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    background: var(--neutral-100);
+    border-radius: var(--radius-lg);
+    color: var(--neutral-600);
+  }
+
+  .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.3;
+  }
+
+  .empty-state-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--neutral-900);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  @media (max-width: 768px) {
+    .post-header {
+      flex-direction: column;
+    }
+
+    .post-actions {
+      flex-direction: column;
+    }
+
+    .action-btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .modal-actions {
+      flex-direction: column;
+    }
+
+    .modal-actions .btn {
+      width: 100%;
+    }
+  }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="section-header">
   <div>
-    <h1 class="section-title">Approval Queue</h1>
-    <p class="section-subtitle">Review and approve articles submitted by employees</p>
+    <h1 class="section-title"><i class="fas fa-hourglass-half"></i> Approval Queue</h1>
+    <p class="section-subtitle">Review and approve pending posts from team members</p>
   </div>
+</div>
+
+<div class="queue-section">
+  <div class="queue-title">
+    <i class="fas fa-file-alt"></i> Pending Posts
+    {% if pending_count > 0 %}
+      <span class="notification-badge">{{ pending_count }}</span>
+    {% endif %}
+  </div>
+
   {% if pending_posts %}
-  <span class="badge badge-pending" style="font-size:14px;padding:6px 14px;">
-    {{ pending_posts.count }} pending
-  </span>
+    {% for post in pending_posts %}
+    <div class="pending-post">
+      <div class="post-header">
+        <div style="flex: 1;">
+          <div class="post-title">{{ post.title }}</div>
+          <div class="post-meta">
+            Submitted by <strong>{{ post.author.get_full_name|default:post.author.email }}</strong> on {{ post.created_at|date:"d M Y, H:i" }}
+            {% if post.category %}
+              • <span style="color: var(--primary);">{{ post.category.name }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <span class="badge badge-amber">Pending Review</span>
+      </div>
+
+      <div class="post-body-preview">
+        {{ post.body|truncatewords:50 }}
+      </div>
+
+      <div style="font-size: 12px; color: var(--neutral-500); margin-bottom: var(--spacing-md);">
+        <i class="fas fa-info-circle"></i> Preview truncated - click Preview Full Post to see complete content
+      </div>
+
+      <div class="post-actions">
+        <form method="post" action="{% url 'knowledge_base:post_approve' post.slug %}" style="display: inline;">
+          {% csrf_token %}
+          <button type="submit" class="action-btn action-btn-approve">
+            <i class="fas fa-check-circle"></i> Approve & Publish
+          </button>
+        </form>
+
+        <button type="button" class="action-btn action-btn-reject" onclick="openRejectModal('{{ post.slug }}')">
+          <i class="fas fa-times-circle"></i> Reject
+        </button>
+
+        <a href="{% url 'knowledge_base:post_detail' post.slug %}" class="action-btn" style="background: var(--neutral-100); color: var(--neutral-900);">
+          <i class="fas fa-eye"></i> Preview Full Post
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon"><i class="fas fa-inbox"></i></div>
+      <div class="empty-state-title">✅ No pending posts</div>
+      <p>All posts have been reviewed. Great work!</p>
+    </div>
   {% endif %}
 </div>
 
-{% for post in pending_posts %}
-<div class="card" style="margin-bottom:20px;overflow:hidden;">
-
-  <!-- Post header -->
-  <div style="padding:24px 24px 16px;">
-    <!-- Author + meta -->
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-      <div class="post-author-avatar" style="width:40px;height:40px;font-size:15px;">
-        {% if post.author.avatar %}<img src="{{ post.author.avatar.url }}" alt="">
-        {% else %}{{ post.author.first_name|first|upper }}{% endif %}
-      </div>
-      <div>
-        <div style="font-weight:600;font-size:14px;">{{ post.author.get_full_name }}</div>
-        <div style="font-size:12px;color:var(--ink-4);">{{ post.author.department|default:"ACT Fibernet" }} · Submitted {{ post.updated_at|date:"d M, Y" }}</div>
-      </div>
-      <span class="badge badge-pending" style="margin-left:auto;">⏳ Pending Review</span>
+<!-- Rejection Modal -->
+<div class="reject-modal" id="rejectModal">
+  <div class="reject-modal-content">
+    <div class="reject-modal-title">Reject Post</div>
+    <div class="reject-modal-description">
+      Provide feedback to the author explaining why this post is being rejected.
     </div>
 
-    <h2 style="font-size:19px;font-weight:600;margin-bottom:8px;line-height:1.35;">{{ post.title }}</h2>
+    <form method="post" id="rejectForm" action="">
+      {% csrf_token %}
 
-    {% if post.category %}
-    <span class="badge badge-blue" style="margin-bottom:12px;">{{ post.category.name }}</span>
-    {% endif %}
-
-    <!-- Excerpt -->
-    <p style="font-size:14px;color:var(--ink-3);line-height:1.65;margin-bottom:16px;">
-      {{ post.body|truncatewords:70 }}
-    </p>
-
-    <!-- AI Summary area -->
-    <div id="ai-area-{{ post.slug }}">
-      {% if post.ai_summary %}
-      <div class="ai-box">
-        <div class="ai-icon">🤖</div>
-        <div>
-          <div class="ai-label">AI Summary</div>
-          <div class="ai-text">{{ post.ai_summary }}</div>
-        </div>
+      <div class="form-group">
+        <label class="form-label" for="rejectReason">Rejection Reason <span style="color: var(--danger);">*</span></label>
+        <textarea name="reason" id="rejectReason" class="form-control" placeholder="Explain why this post doesn't meet our guidelines..." required></textarea>
       </div>
-      {% else %}
-      <button onclick="generateSummary('{{ post.slug }}', this)"
-              style="display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#FFF8F0,#FFF0F5);
-                     border:1px dashed #F4C5C5;color:var(--red);padding:10px 16px;
-                     border-radius:var(--radius-md);cursor:pointer;font-size:13.5px;font-weight:500;
-                     transition:all .2s;" id="ai-btn-{{ post.slug }}">
-        🤖 Generate AI Summary
-      </button>
-      {% endif %}
-    </div>
-  </div>
 
-  <!-- Action bar -->
-  <div style="padding:16px 24px;background:var(--bg);border-top:1px solid var(--border);
-              display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-
-    <!-- Approve -->
-    <form method="post" action="{% url 'knowledge_base:post_approve' post.slug %}">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-success">✅ Approve & Publish</button>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeRejectModal()">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+        <button type="submit" class="btn btn-warning" style="background-color: var(--warning); border: none; color: black; font-weight: bold; padding: 10px 20px; border-radius: var(--radius-md);">
+          <i class="fas fa-times-circle"></i> Confirm Rejection
+        </button>
+      </div>
     </form>
-
-    <!-- Reject with reason -->
-    <form method="post" action="{% url 'knowledge_base:post_reject' post.slug %}"
-          style="display:flex;gap:8px;align-items:center;flex:1;min-width:280px;">
-      {% csrf_token %}
-      <input name="reason" placeholder="Reason for rejection (optional)…"
-             class="form-control" style="flex:1;padding:9px 14px;">
-      <button type="submit" class="btn btn-secondary" style="border-color:var(--red);color:var(--red);">
-        ✕ Reject
-      </button>
-    </form>
-
   </div>
 </div>
-{% empty %}
-<div class="card">
-  <div class="empty-state">
-    <div class="empty-state-icon">🎉</div>
-    <div class="empty-state-title">All caught up!</div>
-    <div class="empty-state-text">There are no articles waiting for review. Check back later.</div>
-  </div>
-</div>
-{% endfor %}
-{% endblock %}
 
-{% block extra_js %}
 <script>
-async function generateSummary(slug, btn) {
-  btn.textContent = '⏳ Generating summary…';
-  btn.disabled = true;
-  btn.style.opacity = '.7';
-
-  try {
-    const resp = await fetch(`/api/posts/${slug}/generate-summary/`, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '',
-        'Content-Type': 'application/json',
-      },
-    });
-    const data = await resp.json();
-
-    if (data.success) {
-      const area = document.getElementById(`ai-area-${slug}`);
-      area.innerHTML = `
-        <div class="ai-box">
-          <div class="ai-icon">🤖</div>
-          <div>
-            <div class="ai-label">AI Summary</div>
-            <div class="ai-text">${data.ai_summary}</div>
-          </div>
-        </div>`;
-    } else {
-      btn.textContent = '❌ Failed — try again';
-      btn.disabled = false; btn.style.opacity = '1';
-    }
-  } catch {
-    btn.textContent = '❌ Error — try again';
-    btn.disabled = false; btn.style.opacity = '1';
+  function openRejectModal(postSlug) {
+    const modal = document.getElementById('rejectModal');
+    const form = document.getElementById('rejectForm');
+    let baseUrl = "{% url 'knowledge_base:post_reject' 'SLUG_PLACEHOLDER' %}";
+    form.action = baseUrl.replace('SLUG_PLACEHOLDER', postSlug);
+    modal.classList.add('open');
   }
-}
+
+  function closeRejectModal() {
+    const modal = document.getElementById('rejectModal');
+    modal.classList.remove('open');
+    document.getElementById('rejectForm').reset();
+  }
+
+  window.onclick = function(event) {
+    const modal = document.getElementById('rejectModal');
+    if (event.target == modal) {
+      closeRejectModal();
+    }
+  }
 </script>
 {% endblock %}

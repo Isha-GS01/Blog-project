@@ -1,30 +1,13 @@
 {% extends "knowledge_base/base.html" %}
 {% load static %}
 
-{% block title %}My Workspace — ACT InnerCircle{% endblock %}
+{% block title %}My Workspace — ACT Connect{% endblock %}
+{% block nav_workspace %}active{% endblock %}
 
 {% block content %}
 
-{# ═══════════════════════════════════════════════════════════════════════
-   DATA BRIDGE — Django → JavaScript via json_script (XSS-safe).
-
-   NEVER write: var data = {{ pie_data }};  ← XSS vulnerability
-   ALWAYS use:  JSON.parse(document.getElementById('id').textContent)
-
-   json_script renders a hidden <script type="application/json"> tag
-   that browsers treat as inert data, not executable code.
-═══════════════════════════════════════════════════════════════════════ #}
-{{ pie_labels|json_script:"js-pie-labels" }}
-{{ pie_data|json_script:"js-pie-data" }}
-{{ daily_labels|json_script:"js-daily-labels" }}
-{{ daily_data|json_script:"js-daily-data" }}
-
-
 <div class="ws-page">
 
-  <!-- ══════════════════════════════════════════════════════
-       HERO — Personal greeting + identity strip
-  ══════════════════════════════════════════════════════ -->
   <header class="ws-hero">
     <div class="ws-hero-left">
       <div class="ws-hero-avatar">
@@ -58,1020 +41,180 @@
     </div>
   </header>
 
-  <!-- ══════════════════════════════════════════════════════
-       KPI STRIP — 4 summary numbers
-  ══════════════════════════════════════════════════════ -->
   <section class="ws-kpi-strip" aria-label="Your stats">
 
     <div class="ws-kpi ws-kpi--hero">
-      <div class="ws-kpi-inner">
-        <span class="ws-kpi-num" data-target="{{ posts_total }}">0</span>
-        <span class="ws-kpi-label">Total Posts</span>
-      </div>
+      <span class="ws-kpi-num">{{ draft_count|add:pending_count|add:published_count }}</span>
+      <span class="ws-kpi-label">Total Posts</span>
       <div class="ws-kpi-sub-grid">
         <span class="ws-kpi-sub">
           <span class="ws-kpi-sub-dot ws-kpi-sub-dot--published"></span>
-          {{ posts_published }} published
+          {{ published_count }} published
         </span>
         <span class="ws-kpi-sub">
           <span class="ws-kpi-sub-dot ws-kpi-sub-dot--draft"></span>
-          {{ posts_draft }} draft
+          {{ draft_count }} draft
         </span>
-        {% if posts_pending %}
+        {% if pending_count > 0 %}
         <span class="ws-kpi-sub">
           <span class="ws-kpi-sub-dot ws-kpi-sub-dot--pending"></span>
-          {{ posts_pending }} pending
-        </span>
-        {% endif %}
-        {% if posts_rejected %}
-        <span class="ws-kpi-sub">
-          <span class="ws-kpi-sub-dot ws-kpi-sub-dot--rejected"></span>
-          {{ posts_rejected }} rejected
+          {{ pending_count }} pending
         </span>
         {% endif %}
       </div>
     </div>
 
-    <div class="ws-kpi">
-      <svg class="ws-kpi-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M12 4l2.09 6.26L20 12l-5.91 1.74L12 20l-2.09-6.26L4 12l5.91-1.74L12 4z"
-              stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-      </svg>
-      <span class="ws-kpi-num" data-target="{{ total_likes }}">0</span>
-      <span class="ws-kpi-label">Likes received</span>
-    </div>
-
-    <div class="ws-kpi">
-      <svg class="ws-kpi-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-              stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-      </svg>
-      <span class="ws-kpi-num" data-target="{{ total_comments }}">0</span>
-      <span class="ws-kpi-label">Comments received</span>
-    </div>
-
-    <div class="ws-kpi">
-      <svg class="ws-kpi-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span class="ws-kpi-num" data-target="{{ posts_published }}">0</span>
-      <span class="ws-kpi-label">Published posts</span>
-    </div>
-
   </section>
 
-  <!-- ══════════════════════════════════════════════════════
-       CHARTS ROW — Pie (status) + Line (daily likes)
-  ══════════════════════════════════════════════════════ -->
-  <section class="ws-charts-row" aria-label="Charts">
-
-    <!-- Pie chart: post status distribution -->
-    <div class="ws-chart-card ws-chart-card--pie">
-      <div class="ws-chart-header">
-        <div>
-          <h2 class="ws-chart-title">Post Status</h2>
-          <p class="ws-chart-sub">Distribution across all your posts</p>
+  {% if my_posts %}
+    {% regroup my_posts by get_status_display as posts_by_status %}
+    
+    {% for status_group in posts_by_status %}
+      <section class="ws-posts-section">
+        <div class="ws-section-header">
+          <h2 class="ws-section-title">
+            {% if status_group.grouper == "Published" %}
+              📄 Published Posts
+            {% elif status_group.grouper == "Draft" %}
+              ✏️ Draft Posts
+            {% elif status_group.grouper == "Pending Review" %}
+              ⏳ Pending Review
+            {% elif status_group.grouper == "Rejected" %}
+              ❌ Rejected Posts
+            {% endif %}
+          </h2>
+          <span class="ws-section-badge">{{ status_group.list|length }}</span>
         </div>
-      </div>
 
-      {% if posts_total > 0 %}
-        <div class="ws-pie-layout">
-          <!-- Canvas gets a fixed square so the doughnut renders correctly -->
-          <div class="ws-pie-canvas-wrap">
-            <canvas id="pieChart" width="200" height="200"></canvas>
-            <!-- Centred label inside the doughnut hole -->
-            <div class="ws-pie-centre">
-              <span class="ws-pie-centre-num">{{ posts_total }}</span>
-              <span class="ws-pie-centre-label">total</span>
-            </div>
-          </div>
-          <!-- Custom legend — Chart.js default legend is hard to style -->
-          <ul class="ws-pie-legend" id="pieLegend" aria-label="Status legend"></ul>
-        </div>
-      {% else %}
-        <div class="ws-empty-state">
-          <div class="ws-empty-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"
-                    stroke="currentColor" stroke-width="1.4"/>
-              <path d="M14 2v6h6" stroke="currentColor" stroke-width="1.4"/>
-            </svg>
-          </div>
-          <p class="ws-empty-text">Create your first post to see your status breakdown.</p>
-          <a href="{% url 'knowledge_base:post_create' %}" class="ws-btn ws-btn--primary ws-btn--sm">Write a post</a>
-        </div>
-      {% endif %}
-    </div>
-
-    <!-- Line chart: daily likes over 30 days -->
-    <div class="ws-chart-card ws-chart-card--line">
-      <div class="ws-chart-header">
-        <div>
-          <h2 class="ws-chart-title">Likes — Last 30 Days</h2>
-          <p class="ws-chart-sub">Daily upvotes received on your posts</p>
-        </div>
-        <div class="ws-chart-total-badge">
-          <span class="ws-chart-total-num">{{ total_likes }}</span>
-          <span class="ws-chart-total-label">total</span>
-        </div>
-      </div>
-      <div class="ws-line-canvas-wrap">
-        <canvas id="lineChart"></canvas>
-      </div>
-    </div>
-
-  </section>
-
-  <!-- ══════════════════════════════════════════════════════
-       BOTTOM ROW — Top posts table + Recent activity
-  ══════════════════════════════════════════════════════ -->
-  <section class="ws-bottom-row" aria-label="Posts detail">
-
-    <!-- Top performing posts -->
-    <div class="ws-table-card">
-      <div class="ws-table-header">
-        <h2 class="ws-table-title">Top Performing Posts</h2>
-        <span class="ws-table-badge">By likes</span>
-      </div>
-
-      {% if top_posts %}
-        <table class="ws-table">
-          <thead>
-            <tr>
-              <th class="ws-th-rank">#</th>
-              <th>Post</th>
-              <th class="ws-th-num">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 4l2.09 6.26L20 12l-5.91 1.74L12 20l-2.09-6.26L4 12l5.91-1.74L12 4z"
-                        stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                </svg>
-              </th>
-              <th class="ws-th-num">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-                        stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                </svg>
-              </th>
-              <th class="ws-th-status">Status</th>
-              <th class="ws-th-date">Published</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for post in top_posts %}
-            <tr class="ws-tr">
-              <td class="ws-td-rank">
-                {% if forloop.counter == 1 %}
-                  <span class="ws-medal ws-medal--gold">1</span>
-                {% elif forloop.counter == 2 %}
-                  <span class="ws-medal ws-medal--silver">2</span>
-                {% elif forloop.counter == 3 %}
-                  <span class="ws-medal ws-medal--bronze">3</span>
-                {% else %}
-                  <span class="ws-rank-plain">{{ forloop.counter }}</span>
-                {% endif %}
-              </td>
-              <td class="ws-td-title">
-                <a href="{% url 'knowledge_base:post_detail' post.slug %}" class="ws-post-link">
-                  {{ post.title|truncatechars:55 }}
-                </a>
+        <div class="ws-posts-grid">
+          {% for post in status_group.list %}
+          <div class="ws-post-card">
+            <div class="ws-post-header">
+              <div>
+                <h3 class="ws-post-title">{{ post.title }}</h3>
                 {% if post.category %}
-                  <span class="ws-chip">{{ post.category.name }}</span>
+                  <span class="ws-post-category">{{ post.category.name }}</span>
                 {% endif %}
-              </td>
-              <td class="ws-td-num ws-td-likes">
-                <span>{{ post.like_count }}</span>
-              </td>
-              <td class="ws-td-num">
-                <span>{{ post.comment_count }}</span>
-              </td>
-              <td class="ws-td-status">
-                <span class="ws-status-badge ws-status-badge--{{ post.status|lower }}">
-                  {{ post.get_status_display }}
-                </span>
-              </td>
-              <td class="ws-td-date">
-                {{ post.published_at|date:"d M Y"|default:"—" }}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% else %}
-        <div class="ws-empty-state ws-empty-state--table">
-          <p class="ws-empty-text">No published posts yet. Once you publish, your top posts appear here.</p>
-        </div>
-      {% endif %}
-    </div>
-
-    <!-- Recent activity sidebar -->
-    <div class="ws-activity-card">
-      <div class="ws-table-header">
-        <h2 class="ws-table-title">Recent Posts</h2>
-        <span class="ws-table-badge">Last 10</span>
-      </div>
-      <ul class="ws-activity-list">
-        {% for post in recent_posts %}
-        <li class="ws-activity-item">
-          <div class="ws-activity-status-bar ws-activity-status-bar--{{ post.status|lower }}"></div>
-          <div class="ws-activity-body">
-            <a href="{% url 'knowledge_base:post_detail' post.slug %}" class="ws-activity-title">
-              {{ post.title|truncatechars:45 }}
-            </a>
-            <div class="ws-activity-meta">
-              <span class="ws-status-badge ws-status-badge--{{ post.status|lower }} ws-status-badge--xs">
+              </div>
+              <span class="ws-status-badge ws-status-badge--{{ post.status|lower }}">
                 {{ post.get_status_display }}
               </span>
-              <span class="ws-activity-date">{{ post.created_at|date:"d M" }}</span>
+            </div>
+
+            <p class="ws-post-meta">
+              Created {{ post.created_at|date:"d M Y" }}
+            </p>
+
+            {% if post.rejection_reason %}
+            <div class="ws-rejection-reason">
+              <strong>Rejection reason:</strong> {{ post.rejection_reason }}
+            </div>
+            {% endif %}
+
+            <div class="ws-post-actions">
+              <a href="{% url 'knowledge_base:post_edit' post.slug %}" 
+                 class="ws-action-btn ws-action-btn--edit">
+                ✏️ Edit
+              </a>
+
+              <a href="{% url 'knowledge_base:post_delete_author' post.slug %}" 
+                 class="ws-action-btn ws-action-btn--delete"
+                 onclick="return confirm('Delete this post permanently?');">
+                🗑️ Delete
+              </a>
+
+              {% if post.status == "draft" or post.status == "rejected" %}
+              <form method="post" action="{% url 'knowledge_base:post_submit' post.slug %}" style="display:inline; flex: 1;">
+                {% csrf_token %}
+                <button type="submit" class="ws-action-btn ws-action-btn--submit" style="width: 100%;">
+                  ⬆️ Submit for Review
+                </button>
+              </form>
+              {% endif %}
+
+              {% if post.status == "published" %}
+              <a href="{% url 'knowledge_base:post_detail' post.slug %}" 
+                 class="ws-action-btn ws-action-btn--view">
+                👁️ View
+              </a>
+              {% endif %}
             </div>
           </div>
-          <div class="ws-activity-actions">
-            <a href="{% url 'knowledge_base:post_detail' post.slug %}" class="ws-icon-btn" title="View">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="1.8"/>
-                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
-              </svg>
-            </a>
-          </div>
-        </li>
-        {% empty %}
-        <li class="ws-empty-state">
-          <p class="ws-empty-text">No posts yet.</p>
-        </li>
-        {% endfor %}
-      </ul>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+  {% else %}
+    <div class="ws-empty-state">
+      <p class="ws-empty-text">No posts yet. Create your first post!</p>
+      <a href="{% url 'knowledge_base:post_create' %}" class="ws-btn ws-btn--primary">Write a Post</a>
     </div>
+  {% endif %}
 
-  </section>
-
-</div><!-- /ws-page -->
-
-
-<!-- Chart.js from CDN — loaded before our script -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
-<script>
-(function () {
-  'use strict';
-
-  /* ── 1. Read Django data from json_script — the safe pattern ──────────
-     json_script escapes HTML entities so malicious data can't break out
-     of the <script type="application/json"> tag into live JS execution.
-  ────────────────────────────────────────────────────────────────────── */
-  const pieLabels   = JSON.parse(document.getElementById('js-pie-labels').textContent);
-  const pieData     = JSON.parse(document.getElementById('js-pie-data').textContent);
-  const dailyLabels = JSON.parse(document.getElementById('js-daily-labels').textContent);
-  const dailyData   = JSON.parse(document.getElementById('js-daily-data').textContent);
-
-  /* ── 2. Design tokens ─────────────────────────────────────────────── */
-  const RED      = '#D42B2B';
-  const FONT     = "'DM Sans', system-ui, sans-serif";
-  const GRID_CLR = 'rgba(26,26,26,0.055)';
-  const MUTED    = '#aaa';
-
-  /* Status colour palette for the pie chart — order matches pie_map in views.py */
-  const PIE_COLOURS = {
-    'Published':     { bg: '#D42B2B', border: '#b82222' },
-    'Draft':         { bg: '#94a3b8', border: '#7a8fa6' },
-    'Pending Review':{ bg: '#f59e0b', border: '#d97706' },
-    'Rejected':      { bg: '#ef4444', border: '#dc2626' },
-  };
-
-  Chart.defaults.font.family = FONT;
-  Chart.defaults.font.size   = 12;
-  Chart.defaults.color       = MUTED;
-
-  /* ── 3. Doughnut / Pie chart ────────────────────────────────────────
-     type: 'doughnut' leaves a hole in the centre where we overlay
-     the total count using a CSS-positioned div (.ws-pie-centre).
-     cutout: '68%' controls the hole size.
-  ────────────────────────────────────────────────────────────────────── */
-  const pieCanvas = document.getElementById('pieChart');
-  if (pieCanvas && pieData.length > 0) {
-
-    const bgColours     = pieLabels.map(l => (PIE_COLOURS[l] || PIE_COLOURS['Draft']).bg);
-    const borderColours = pieLabels.map(l => (PIE_COLOURS[l] || PIE_COLOURS['Draft']).border);
-
-    const pieChart = new Chart(pieCanvas, {
-      type: 'doughnut',
-      data: {
-        labels: pieLabels,
-        datasets: [{
-          data:            pieData,
-          backgroundColor: bgColours,
-          borderColor:     borderColours,
-          borderWidth:     2,
-          hoverOffset:     6,
-          /* Rounded segment ends */
-          borderRadius:    4,
-          spacing:         2,
-        }]
-      },
-      options: {
-        responsive:          false,   /* fixed size — we sized the canvas manually */
-        maintainAspectRatio: false,
-        cutout:              '68%',   /* doughnut hole size */
-        plugins: {
-          legend: { display: false }, /* we build our own legend below */
-          tooltip: {
-            backgroundColor: '#1a1a1a',
-            titleColor:      '#fff',
-            bodyColor:       'rgba(255,255,255,0.75)',
-            padding:         12,
-            cornerRadius:    8,
-            callbacks: {
-              label: ctx => {
-                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                const pct   = total > 0 ? Math.round((ctx.parsed / total) * 100) : 0;
-                return '  ' + ctx.parsed + ' posts (' + pct + '%)';
-              }
-            }
-          }
-        }
-      }
-    });
-
-    /* Build custom legend programmatically */
-    const legendEl = document.getElementById('pieLegend');
-    if (legendEl) {
-      pieLabels.forEach(function (label, i) {
-        const count = pieData[i];
-        const total = pieData.reduce((a, b) => a + b, 0);
-        const pct   = total > 0 ? Math.round((count / total) * 100) : 0;
-        const colour = bgColours[i];
-
-        const li = document.createElement('li');
-        li.className = 'ws-legend-item';
-        li.innerHTML =
-          '<span class="ws-legend-dot" style="background:' + colour + '"></span>' +
-          '<span class="ws-legend-label">' + label + '</span>' +
-          '<span class="ws-legend-count">' + count + '</span>' +
-          '<span class="ws-legend-pct">' + pct + '%</span>';
-        legendEl.appendChild(li);
-      });
-    }
-  }
-
-  /* ── 4. Line chart — daily likes over 30 days ───────────────────────
-     fill: true + gradient gives a soft area chart feel.
-     tension: 0.35 makes it curve rather than zig-zag.
-     We show a point only if it has data (pointRadius callback).
-  ────────────────────────────────────────────────────────────────────── */
-  const lineCanvas = document.getElementById('lineChart');
-  if (lineCanvas) {
-    const ctx = lineCanvas.getContext('2d');
-
-    /* Gradient fill under the line — fades top-to-bottom */
-    const grad = ctx.createLinearGradient(0, 0, 0, 240);
-    grad.addColorStop(0,    'rgba(212,43,43,0.18)');
-    grad.addColorStop(0.65, 'rgba(212,43,43,0.04)');
-    grad.addColorStop(1,    'rgba(212,43,43,0.00)');
-
-    /* Only show tick labels every 5 days to avoid crowding on mobile */
-    const tickLabels = dailyLabels.map((l, i) => (i % 5 === 0 ? l : ''));
-
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: dailyLabels,
-        datasets: [{
-          label:                'Likes',
-          data:                 dailyData,
-          borderColor:          RED,
-          backgroundColor:      grad,
-          borderWidth:          2,
-          fill:                 true,
-          tension:              0.35,
-          /* Points: visible only on days with >0 likes */
-          pointRadius:          dailyData.map(v => v > 0 ? 4 : 0),
-          pointHoverRadius:     6,
-          pointBackgroundColor: '#fff',
-          pointBorderColor:     RED,
-          pointBorderWidth:     2,
-          pointHoverBackgroundColor: RED,
-        }]
-      },
-      options: {
-        responsive:          true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#1a1a1a',
-            titleColor:      '#fff',
-            bodyColor:       'rgba(255,255,255,0.75)',
-            padding:         12,
-            cornerRadius:    8,
-            displayColors:   false,
-            callbacks: {
-              title: items => items[0].label,
-              label: ctx  => '  ' + ctx.parsed.y + ' like' + (ctx.parsed.y !== 1 ? 's' : ''),
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              stepSize:  1,
-              precision: 0,
-              padding:   8,
-            },
-            grid:   { color: GRID_CLR, drawBorder: false },
-            border: { display: false },
-          },
-          x: {
-            ticks: {
-              padding:  8,
-              maxRotation: 0,
-              /* Show only every-5th label */
-              callback: function(val, i) { return tickLabels[i]; }
-            },
-            grid:   { display: false },
-            border: { display: false },
-          }
-        }
-      }
-    });
-  }
-
-  /* ── 5. KPI counter animation ────────────────────────────────────────
-     Counts each number from 0 to its target value over 900ms.
-     Uses a cubic ease-out so it decelerates near the end.
-  ────────────────────────────────────────────────────────────────────── */
-  function animateCounter(el) {
-    const target   = parseInt(el.dataset.target, 10) || 0;
-    if (target === 0) { el.textContent = '0'; return; }
-    const duration = 900;
-    const start    = performance.now();
-
-    (function step(now) {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased    = 1 - Math.pow(1 - progress, 3); /* cubic ease-out */
-      el.textContent = Math.round(eased * target).toLocaleString('en-IN');
-      if (progress < 1) requestAnimationFrame(step);
-    })(start);
-  }
-
-  document.querySelectorAll('.ws-kpi-num[data-target]').forEach(animateCounter);
-
-  /* ── 6. Staggered row reveal on scroll ──────────────────────────────
-     IntersectionObserver watches table rows and activity items.
-     When they scroll into view, the 'visible' class triggers a CSS
-     fade-up animation. Each item is delayed by its index × 40ms.
-  ────────────────────────────────────────────────────────────────────── */
-  const observer = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('ws-visible');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1 });
-
-  document.querySelectorAll('.ws-tr, .ws-activity-item, .ws-kpi').forEach(function(el, i) {
-    el.style.transitionDelay = (i * 40) + 'ms';
-    observer.observe(el);
-  });
-
-})();
-</script>
-
+</div>
 
 <style>
-/* ══════════════════════════════════════════════════════════════
-   ACT InnerCircle — My Workspace
-   Fonts: DM Serif Display (headings) · DM Sans (body)
-   Primary colour: #D42B2B (ACT red)
-══════════════════════════════════════════════════════════════ */
-
-/* ── Page shell ── */
-.ws-page {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem 5rem;
-  font-family: 'DM Sans', system-ui, sans-serif;
-}
-
-/* ── Hero header ── */
-.ws-hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1.75rem;
-  border-bottom: 1px solid #ebe8e2;
-  flex-wrap: wrap;
-}
-.ws-hero-left {
-  display: flex;
-  align-items: center;
-  gap: 1.1rem;
-}
-/* Avatar */
-.ws-hero-avatar {
-  position: relative;
-  width: 60px; height: 60px;
-  flex-shrink: 0;
-}
-.ws-avatar-img {
-  width: 60px; height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-.ws-avatar-initials {
-  width: 60px; height: 60px;
-  border-radius: 50%;
-  background: #D42B2B;
-  color: #fff;
-  font-size: 1.25rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  letter-spacing: .02em;
-}
-.ws-avatar-ring {
-  position: absolute;
-  inset: -3px;
-  border-radius: 50%;
-  border: 2px solid #D42B2B;
-  opacity: .35;
-}
-/* Greeting text */
-.ws-hero-greeting {
-  font-size: 12px;
-  color: #aaa;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  margin: 0 0 2px;
-}
-.ws-hero-name {
-  font-family: 'DM Serif Display', Georgia, serif;
-  font-size: 1.75rem;
-  font-weight: 400;
-  color: #1a1a1a;
-  margin: 0 0 4px;
-  line-height: 1.1;
-}
-.ws-hero-meta {
-  font-size: 13px;
-  color: #aaa;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+/* CSS remains the same as provided in your original snippet */
+.ws-page { max-width: 1120px; margin: 0 auto; padding: 2rem 1.5rem 5rem; font-family: 'Product Sans', system-ui, sans-serif; }
+.ws-hero { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin-bottom: 2rem; padding-bottom: 1.75rem; border-bottom: 1px solid #ebe8e2; flex-wrap: wrap; }
+.ws-hero-left { display: flex; align-items: center; gap: 1.1rem; }
+.ws-hero-avatar { position: relative; width: 60px; height: 60px; flex-shrink: 0; }
+.ws-avatar-img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
+.ws-avatar-initials { width: 60px; height: 60px; border-radius: 50%; background: #e53935; color: #fff; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.ws-avatar-ring { position: absolute; inset: -3px; border-radius: 50%; border: 2px solid #e53935; opacity: 0.35; }
+.ws-hero-greeting { font-size: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 2px; }
+.ws-hero-name { font-size: 1.75rem; font-weight: 700; color: #1a1a1a; margin: 0 0 4px; }
+.ws-hero-meta { font-size: 13px; color: #aaa; margin: 0; display: flex; align-items: center; gap: 6px; }
 .ws-dot { color: #ddd; }
-
-/* Buttons */
-.ws-hero-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.ws-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background .15s, transform .1s, box-shadow .15s;
-  white-space: nowrap;
-}
+.ws-hero-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.ws-btn { display: inline-flex; align-items: center; gap: 6px; font-family: 'Product Sans', system-ui, sans-serif; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; text-decoration: none; transition: all 0.15s ease; }
 .ws-btn:active { transform: scale(0.97); }
-.ws-btn--primary {
-  background: #D42B2B;
-  color: #fff;
-  border-color: #D42B2B;
-}
-.ws-btn--primary:hover { background: #bb2222; box-shadow: 0 2px 8px rgba(212,43,43,.3); }
-.ws-btn--ghost {
-  background: transparent;
-  color: #666;
-  border-color: #ddd;
-}
+.ws-btn--primary { background: #e53935; color: #fff; }
+.ws-btn--primary:hover { background: #c62828; box-shadow: 0 2px 8px rgba(229, 57, 53, 0.3); }
+.ws-btn--ghost { background: transparent; color: #666; border-color: #ddd; }
 .ws-btn--ghost:hover { background: #f7f5f2; }
-.ws-btn--sm { font-size: 12px; padding: 6px 12px; }
-
-/* ── KPI strip ── */
-.ws-kpi-strip {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-@media (max-width: 860px) { .ws-kpi-strip { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 480px) { .ws-kpi-strip { grid-template-columns: 1fr; } }
-
-/* Scroll-reveal — starts invisible, JS adds .ws-visible */
-.ws-kpi {
-  background: #fff;
-  border: 1px solid #ebe8e2;
-  border-radius: 12px;
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity .4s ease, transform .4s ease, box-shadow .2s;
-}
-.ws-kpi.ws-visible {
-  opacity: 1;
-  transform: none;
-}
-.ws-kpi:hover { box-shadow: 0 4px 16px rgba(0,0,0,.06); }
-
-.ws-kpi--hero {
-  border-color: #f5c0c0;
-  background: linear-gradient(135deg, #fdf5f5 0%, #fff 100%);
-  position: relative;
-  overflow: hidden;
-}
-.ws-kpi--hero::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: #D42B2B;
-  border-radius: 12px 12px 0 0;
-}
-.ws-kpi-icon { color: #ccc; flex-shrink: 0; }
-.ws-kpi--hero .ws-kpi-icon { display: none; }
-
-.ws-kpi-num {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-.ws-kpi--hero .ws-kpi-num { color: #D42B2B; font-size: 2.4rem; }
-
-.ws-kpi-label {
-  font-size: 11px;
-  color: #aaa;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  font-weight: 500;
-}
-/* Sub-breakdown dots on the hero KPI */
-.ws-kpi-sub-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  margin-top: 6px;
-}
-.ws-kpi-sub {
-  font-size: 12px;
-  color: #888;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.ws-kpi-sub-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.ws-kpi-sub-dot--published { background: #D42B2B; }
-.ws-kpi-sub-dot--draft     { background: #94a3b8; }
-.ws-kpi-sub-dot--pending   { background: #f59e0b; }
-.ws-kpi-sub-dot--rejected  { background: #ef4444; }
-
-/* ── Charts row ── */
-.ws-charts-row {
-  display: grid;
-  grid-template-columns: 340px 1fr;
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
-  align-items: start;
-}
-@media (max-width: 860px) { .ws-charts-row { grid-template-columns: 1fr; } }
-
-.ws-chart-card {
-  background: #fff;
-  border: 1px solid #ebe8e2;
-  border-radius: 12px;
-  padding: 1.5rem;
-}
-.ws-chart-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-  gap: 1rem;
-}
-.ws-chart-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 3px;
-}
-.ws-chart-sub {
-  font-size: 12px;
-  color: #aaa;
-  margin: 0;
-}
-.ws-chart-total-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  flex-shrink: 0;
-}
-.ws-chart-total-num   { font-size: 1.5rem; font-weight: 700; color: #D42B2B; line-height: 1; }
-.ws-chart-total-label { font-size: 10px; color: #bbb; text-transform: uppercase; letter-spacing: .06em; }
-
-/* Pie chart layout */
-.ws-pie-layout {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.25rem;
-}
-.ws-pie-canvas-wrap {
-  position: relative;
-  width: 200px; height: 200px;
-  flex-shrink: 0;
-}
-/* Centred text overlaid in the doughnut hole */
-.ws-pie-centre {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  pointer-events: none;
-}
-.ws-pie-centre-num   { display: block; font-size: 1.75rem; font-weight: 700; color: #1a1a1a; line-height: 1; }
-.ws-pie-centre-label { display: block; font-size: 10px; color: #bbb; text-transform: uppercase; letter-spacing: .07em; margin-top: 2px; }
-
-/* Custom pie legend */
-.ws-pie-legend {
-  list-style: none;
-  padding: 0; margin: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.ws-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-}
-.ws-legend-dot {
-  width: 10px; height: 10px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-.ws-legend-label { flex: 1; color: #555; }
-.ws-legend-count { font-weight: 600; color: #1a1a1a; min-width: 20px; text-align: right; }
-.ws-legend-pct   { font-size: 11px; color: #bbb; min-width: 36px; text-align: right; }
-
-/* Line chart */
-.ws-line-canvas-wrap {
-  position: relative;
-  height: 240px;
-}
-
-/* ── Bottom row ── */
-.ws-bottom-row {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 1.25rem;
-  align-items: start;
-}
-@media (max-width: 860px) { .ws-bottom-row { grid-template-columns: 1fr; } }
-
-.ws-table-card,
-.ws-activity-card {
-  background: #fff;
-  border: 1px solid #ebe8e2;
-  border-radius: 12px;
-  overflow: hidden;
-}
-.ws-table-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.4rem;
-  border-bottom: 1px solid #f2efea;
-  background: #faf9f7;
-}
-.ws-table-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0;
-}
-.ws-table-badge {
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  padding: 3px 10px;
-  border-radius: 20px;
-  background: #fdf1f1;
-  color: #9b1c1c;
-  border: 1px solid #f5c0c0;
-}
-
-/* Table */
-.ws-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.ws-table thead th {
-  padding: 8px 14px;
-  font-size: 10px;
-  font-weight: 600;
-  color: #bbb;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  text-align: left;
-  background: #faf9f7;
-  border-bottom: 1px solid #f2efea;
-}
-.ws-th-rank   { width: 36px; }
-.ws-th-num    { width: 44px; text-align: center; }
-.ws-th-status { width: 100px; }
-.ws-th-date   { width: 96px; white-space: nowrap; }
-
-/* Row scroll-reveal */
-.ws-tr {
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity .35s ease, transform .35s ease, background .12s;
-}
-.ws-tr.ws-visible { opacity: 1; transform: none; }
-.ws-tr td {
-  padding: 10px 14px;
-  border-bottom: 1px solid #f7f5f2;
-  vertical-align: middle;
-  color: #555;
-}
-.ws-tr:last-child td { border-bottom: none; }
-.ws-tr:hover td { background: #fdf9f9; }
-
-.ws-td-rank { width: 36px; }
-.ws-td-num  { text-align: center; color: #888; }
-.ws-td-likes { font-weight: 600; color: #D42B2B !important; }
-.ws-td-date  { font-size: 12px; color: #bbb; white-space: nowrap; }
-
-/* Medals */
-.ws-medal {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  font-size: 10px;
-  font-weight: 700;
-}
-.ws-medal--gold   { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-.ws-medal--silver { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
-.ws-medal--bronze { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
-.ws-rank-plain    { font-size: 12px; color: #ccc; font-weight: 700; padding-left: 4px; }
-
-.ws-post-link {
-  color: #1a1a1a;
-  font-weight: 500;
-  text-decoration: none;
-  display: block;
-}
-.ws-post-link:hover { color: #D42B2B; text-decoration: underline; }
-
-.ws-chip {
-  display: inline-block;
-  font-size: 10px;
-  background: #f2f0ec;
-  color: #777;
-  padding: 1px 8px;
-  border-radius: 20px;
-  margin-top: 3px;
-}
-
-/* Status badges */
-.ws-status-badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  padding: 3px 9px;
-  border-radius: 20px;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-.ws-status-badge--published { background: #fdf1f1; color: #9b1c1c; border-color: #f5c0c0; }
-.ws-status-badge--draft     { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
-.ws-status-badge--pending   { background: #fffbeb; color: #92400e; border-color: #fde68a; }
-.ws-status-badge--rejected  { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
-.ws-status-badge--xs        { font-size: 9px; padding: 2px 7px; }
-
-/* ── Activity sidebar ── */
-.ws-activity-list { list-style: none; padding: 0; margin: 0; }
-
-.ws-activity-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  border-bottom: 1px solid #f7f5f2;
-  position: relative;
-  transition: background .12s;
-  opacity: 0;
-  transform: translateX(6px);
-}
-.ws-activity-item.ws-visible { opacity: 1; transform: none; }
-.ws-activity-item:last-child { border-bottom: none; }
-.ws-activity-item:hover { background: #fdf9f9; }
-
-/* Coloured left accent bar */
-.ws-activity-status-bar {
-  width: 3px;
-  border-radius: 2px;
-  align-self: stretch;
-  flex-shrink: 0;
-  min-height: 40px;
-}
-.ws-activity-status-bar--published { background: #D42B2B; }
-.ws-activity-status-bar--draft     { background: #94a3b8; }
-.ws-activity-status-bar--pending   { background: #f59e0b; }
-.ws-activity-status-bar--rejected  { background: #ef4444; }
-
-.ws-activity-body { flex: 1; min-width: 0; }
-.ws-activity-title {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: #1a1a1a;
-  text-decoration: none;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 5px;
-}
-.ws-activity-title:hover { color: #D42B2B; }
-.ws-activity-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.ws-activity-date { font-size: 11px; color: #bbb; }
-
-.ws-icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px; height: 28px;
-  border-radius: 6px;
-  color: #bbb;
-  text-decoration: none;
-  transition: background .12s, color .12s;
-  flex-shrink: 0;
-}
-.ws-icon-btn:hover { background: #f2f0ec; color: #D42B2B; }
-
-/* ── Empty states ── */
-.ws-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 3rem 1.5rem;
-  text-align: center;
-}
-.ws-empty-state--table { padding: 2rem; }
-.ws-empty-icon {
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  background: #f7f5f2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ccc;
-}
-.ws-empty-text {
-  font-size: 13px;
-  color: #bbb;
-  margin: 0;
-  max-width: 240px;
-  line-height: 1.6;
-}
+.ws-kpi-strip { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 2rem; }
+.ws-kpi { background: #fff; border: 1px solid #ebe8e2; border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; gap: 8px; }
+.ws-kpi--hero { border-color: #f5c0c0; background: linear-gradient(135deg, #fdf5f5 0%, #fff 100%); border-top: 3px solid #e53935; }
+.ws-kpi-num { font-size: 2rem; font-weight: 700; color: #e53935; }
+.ws-kpi-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.07em; }
+.ws-kpi-sub-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+.ws-kpi-sub { font-size: 12px; color: #888; display: flex; align-items: center; gap: 5px; }
+.ws-kpi-sub-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.ws-kpi-sub-dot--published { background: #e53935; }
+.ws-kpi-sub-dot--draft { background: #94a3b8; }
+.ws-kpi-sub-dot--pending { background: #f59e0b; }
+.ws-kpi-sub-dot--rejected { background: #ef4444; }
+.ws-posts-section { margin-bottom: 2rem; }
+.ws-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 2px solid #ebe8e2; }
+.ws-section-title { font-size: 18px; font-weight: 700; color: #1a1a1a; margin: 0; }
+.ws-section-badge { font-size: 12px; font-weight: 600; color: #e53935; background: #fdf1f1; padding: 4px 12px; border-radius: 20px; }
+.ws-posts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; }
+.ws-post-card { background: #fff; border: 1px solid #ebe8e2; border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; transition: all 0.2s ease; }
+.ws-post-card:hover { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); border-color: #e53935; }
+.ws-post-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.ws-post-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin: 0 0 4px; line-height: 1.4; }
+.ws-post-category { display: inline-block; font-size: 10px; background: #f2f0ec; color: #777; padding: 2px 8px; border-radius: 12px; }
+.ws-status-badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+.ws-status-badge--published { background: #fdf1f1; color: #9b1c1c; }
+.ws-status-badge--draft { background: #f1f5f9; color: #475569; }
+.ws-status-badge--pending { background: #fffbeb; color: #92400e; }
+.ws-status-badge--rejected { background: #fff1f2; color: #9f1239; }
+.ws-post-meta { font-size: 12px; color: #aaa; margin: 0; }
+.ws-rejection-reason { background: #fff1f2; border-left: 3px solid #ef4444; padding: 10px 12px; border-radius: 6px; font-size: 12px; color: #9f1239; }
+.ws-post-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.ws-action-btn { flex: 1; min-width: 80px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-family: 'Product Sans', system-ui, sans-serif; font-size: 11px; font-weight: 600; padding: 6px 10px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; text-decoration: none; transition: all 0.12s ease; text-transform: uppercase; }
+.ws-action-btn--edit { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+.ws-action-btn--edit:hover { background: #dcfce7; }
+.ws-action-btn--delete { background: #fdf1f1; color: #9b1c1c; border-color: #f5c0c0; }
+.ws-action-btn--delete:hover { background: #fee2e2; }
+.ws-action-btn--submit { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+.ws-action-btn--submit:hover { background: #fef3c7; }
+.ws-action-btn--view { background: #f0f4f8; color: #1e40af; border-color: #bfdbfe; }
+.ws-action-btn--view:hover { background: #e0e7ff; }
+.ws-empty-state { text-align: center; padding: 3rem; background: #fff; border: 1px solid #ebe8e2; border-radius: 12px; }
+.ws-empty-text { font-size: 14px; color: #bbb; margin-bottom: 1rem; }
+@media (max-width: 768px) { .ws-page { padding: 1.5rem 1rem 3rem; } .ws-hero { flex-direction: column; align-items: flex-start; } .ws-posts-grid { grid-template-columns: 1fr; } }
 </style>
 
 {% endblock %}

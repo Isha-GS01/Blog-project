@@ -2,19 +2,321 @@
 {% block title %}My Profile — ACT InnerCircle{% endblock %}
 {% block nav_profile %}active{% endblock %}
 
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+  .section-header {
+    margin-bottom: 32px;
+  }
+
+  .section-title {
+    font-family: 'Lora', serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a1814;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .section-subtitle {
+    font-size: 15px;
+    color: #7a7570;
+    font-weight: 500;
+  }
+
+  /* ── CARD WITH RED BORDER ── */
+  .card {
+    background: white;
+    border: 2px solid #e2ddd8;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s;
+  }
+
+  .card:hover {
+    border-color: #d9d1c8;
+  }
+
+  .card-red {
+    border: 2.5px solid #c0392b;
+  }
+
+  /* Form styling */
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1814;
+    margin-bottom: 10px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid #e2ddd8;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1a1814;
+    font-family: 'DM Sans', sans-serif;
+    background: white;
+    transition: all 0.2s;
+  }
+
+  .form-control::placeholder {
+    color: #aaa;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: #c0392b;
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
+  }
+
+  .form-hint {
+    display: block;
+    font-size: 12px;
+    color: #7a7570;
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  /* Two column grid */
+  .form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .form-row-2 .form-group {
+    margin-bottom: 0;
+  }
+
+  /* Button - RED ── */
+  .btn-primary {
+    padding: 14px 24px;
+    background: #c0392b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: all 0.3s ease;
+    font-family: 'DM Sans', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+
+  .btn-primary:hover {
+    background: #a03024;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(192, 57, 43, 0.3);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    padding: 12px 20px;
+    background: #f5f2ee;
+    color: #1a1814;
+    border: 1.5px solid #e2ddd8;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-decoration: none;
+  }
+
+  .btn-secondary:hover {
+    background: #ede8e0;
+    border-color: #d9d1c8;
+  }
+
+  /* Badge styling */
+  .badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .badge-red {
+    background: rgba(192, 57, 43, 0.1);
+    color: #c0392b;
+  }
+
+  .badge-blue {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+  }
+
+  /* Avatar styling */
+  .nav-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c0392b, #e67e22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 28px;
+    overflow: hidden;
+  }
+
+  .nav-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Widget styling */
+  .widget {
+    background: white;
+    border: 1px solid #e2ddd8;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .widget-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1814;
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+
+  .stat-box {
+    background: #faf8f4;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #c0392b;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: #7a7570;
+    font-weight: 500;
+  }
+
+  .post-item {
+    display: block;
+    padding: 10px 0;
+    border-bottom: 1px solid #e2ddd8;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .post-item:last-child {
+    border-bottom: none;
+  }
+
+  .post-item:hover {
+    color: #c0392b;
+  }
+
+  .post-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1814;
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+
+  .post-meta {
+    font-size: 12px;
+    color: #7a7570;
+  }
+
+  /* Current photo section */
+  .current-photo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 12px;
+    background: #faf8f4;
+    border-radius: 8px;
+  }
+
+  .current-photo img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e2ddd8;
+  }
+
+  .current-photo-text {
+    font-size: 13px;
+    color: #7a7570;
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .form-row-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .section-title {
+      font-size: 24px;
+    }
+
+    .btn-primary {
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block right_sidebar %}
 <div class="widget">
   <div class="widget-title">📊 Contribution Stats</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-    <div style="background:var(--bg);border-radius:var(--radius-md);padding:14px;text-align:center;">
-      <div style="font-size:26px;font-weight:700;color:var(--red);">{{ published_posts.count }}</div>
-      <div style="font-size:11px;color:var(--ink-4);margin-top:2px;">Published</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="stat-box">
+      <div class="stat-value">{{ published_posts.count }}</div>
+      <div class="stat-label">Published</div>
     </div>
-    <div style="background:var(--bg);border-radius:var(--radius-md);padding:14px;text-align:center;">
-      <div style="font-size:26px;font-weight:700;color:var(--red);">
-        {% with total=0 %}0{% endwith %}👍
-      </div>
-      <div style="font-size:11px;color:var(--ink-4);margin-top:2px;">Upvotes</div>
+    <div class="stat-box">
+      <div class="stat-value">👍</div>
+      <div class="stat-label">Upvotes</div>
     </div>
   </div>
 </div>
@@ -23,10 +325,9 @@
 <div class="widget">
   <div class="widget-title">📄 My Published Posts</div>
   {% for post in published_posts %}
-  <a href="{% url 'knowledge_base:post_detail' post.slug %}"
-     style="display:block;padding:8px 0;border-bottom:1px solid var(--border);text-decoration:none;">
-    <div style="font-size:13px;font-weight:500;color:var(--ink);line-height:1.4;margin-bottom:3px;">{{ post.title|truncatechars:50 }}</div>
-    <div style="font-size:11.5px;color:var(--ink-4);">👍 {{ post.upvote_count }} · 💬 {{ post.comment_count }}</div>
+  <a href="{% url 'knowledge_base:post_detail' post.slug %}" class="post-item">
+    <div class="post-title">{{ post.title|truncatechars:50 }}</div>
+    <div class="post-meta">👍 {{ post.upvote_count }} · 💬 {{ post.comment_count }}</div>
   </a>
   {% endfor %}
 </div>
@@ -41,15 +342,16 @@
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start;">
+<div style="display:grid;grid-template-columns:1fr 320px;gap:28px;align-items:start;">
 
   <!-- Edit form -->
-  <div class="card" style="padding:32px;">
-    <h2 style="font-size:17px;font-weight:600;margin-bottom:24px;">Edit Information</h2>
+  <div class="card card-red" style="padding:40px;">
+    <h2 style="font-family:'Lora',serif;font-size:20px;font-weight:600;margin-bottom:28px;color:#1a1814;">Edit Information</h2>
     <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <!-- Name row -->
+      <div class="form-row-2">
         <div class="form-group">
           <label class="form-label">First Name</label>
           <input type="text" name="first_name" class="form-control" value="{{ form.first_name.value|default:request.user.first_name }}">
@@ -60,34 +362,39 @@
         </div>
       </div>
 
-      <div class="form-group" style="margin-bottom:16px;">
+      <!-- Department -->
+      <div class="form-group">
         <label class="form-label">Department</label>
         <input type="text" name="department" class="form-control"
                placeholder="e.g. Network Operations"
                value="{{ form.department.value|default:request.user.department }}">
       </div>
 
-      <div class="form-group" style="margin-bottom:16px;">
+      <!-- Bio -->
+      <div class="form-group">
         <label class="form-label">Bio</label>
-        <textarea name="bio" rows="4" class="form-control"
-                  placeholder="A short professional bio visible on your author profile…"
-                  style="resize:vertical;">{{ form.bio.value|default:request.user.bio }}</textarea>
+        <textarea name="bio" rows="5" class="form-control" style="resize:vertical;font-family:'DM Sans',sans-serif;line-height:1.6;"
+                  placeholder="A short professional bio visible on your author profile…">{{ form.bio.value|default:request.user.bio }}</textarea>
         <span class="form-hint">Max 500 characters. Shown on your author profile.</span>
       </div>
 
-      <div class="form-group" style="margin-bottom:24px;">
+      <!-- Profile Photo -->
+      <div class="form-group">
         <label class="form-label">Profile Photo</label>
         {% if request.user.avatar %}
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-          <img src="{{ request.user.avatar.url }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--border);">
-          <span style="font-size:13px;color:var(--ink-4);">Current photo — upload a new one to replace it</span>
+        <div class="current-photo">
+          <img src="{{ request.user.avatar.url }}" alt="Current photo">
+          <span class="current-photo-text">Current photo — upload a new one to replace it</span>
         </div>
         {% endif %}
-        <input type="file" name="avatar" accept="image/*" class="form-control" style="padding:8px;">
-        <span class="form-hint">JPEG or PNG. Square images work best.</span>
+        <input type="file" name="avatar" accept="image/*" class="form-control" style="padding:10px;">
+        <span class="form-hint">JPEG or PNG. Square images work best. Max 5MB.</span>
       </div>
 
-      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <!-- Save Button -->
+      <button type="submit" class="btn-primary" style="width:100%;justify-content:center;">
+        💾 Save Changes
+      </button>
 
     </form>
   </div>
@@ -96,48 +403,48 @@
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- Avatar card -->
-    <div class="card" style="padding:24px;text-align:center;">
-      <div class="nav-avatar" style="width:72px;height:72px;font-size:28px;margin:0 auto 12px;">
+    <div class="card" style="padding:28px;text-align:center;">
+      <div class="nav-avatar" style="width:80px;height:80px;font-size:32px;margin:0 auto 16px;">
         {% if request.user.avatar %}
           <img src="{{ request.user.avatar.url }}" alt="">
         {% else %}{{ request.user.first_name|first|upper }}{% endif %}
       </div>
-      <div style="font-weight:700;font-size:17px;margin-bottom:3px;">{{ request.user.get_full_name }}</div>
-      <div style="font-size:13px;color:var(--ink-4);margin-bottom:10px;">{{ request.user.email }}</div>
+      <div style="font-family:'Lora',serif;font-weight:700;font-size:18px;margin-bottom:4px;color:#1a1814;">{{ request.user.get_full_name }}</div>
+      <div style="font-size:13px;color:#7a7570;margin-bottom:12px;">{{ request.user.email }}</div>
       <span class="badge {% if request.user.is_admin_user %}badge-red{% else %}badge-blue{% endif %}">
         {{ request.user.get_role_display }}
       </span>
     </div>
 
     <!-- Account details -->
-    <div class="card" style="padding:20px;">
-      <div style="font-size:12px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink-4);margin-bottom:14px;">Account Details</div>
-      <div style="display:flex;flex-direction:column;gap:12px;font-size:13.5px;">
+    <div class="card" style="padding:24px;">
+      <div style="font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#7a7570;margin-bottom:16px;">Account Details</div>
+      <div style="display:flex;flex-direction:column;gap:14px;font-size:13px;">
         <div>
-          <div style="color:var(--ink-4);font-size:12px;margin-bottom:2px;">Email</div>
-          <div style="color:var(--ink-2);font-weight:500;">{{ request.user.email }}</div>
+          <div style="color:#7a7570;font-size:11px;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em;">Email</div>
+          <div style="color:#1a1814;font-weight:500;">{{ request.user.email }}</div>
         </div>
         <div>
-          <div style="color:var(--ink-4);font-size:12px;margin-bottom:2px;">Role</div>
-          <div style="color:var(--ink-2);font-weight:500;">{{ request.user.get_role_display }}</div>
+          <div style="color:#7a7570;font-size:11px;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em;">Role</div>
+          <div style="color:#1a1814;font-weight:500;">{{ request.user.get_role_display }}</div>
         </div>
         <div>
-          <div style="color:var(--ink-4);font-size:12px;margin-bottom:2px;">Member since</div>
-          <div style="color:var(--ink-2);font-weight:500;">{{ request.user.date_joined|date:"d M Y" }}</div>
+          <div style="color:#7a7570;font-size:11px;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em;">Member Since</div>
+          <div style="color:#1a1814;font-weight:500;">{{ request.user.date_joined|date:"d M Y" }}</div>
         </div>
         {% if request.user.department %}
         <div>
-          <div style="color:var(--ink-4);font-size:12px;margin-bottom:2px;">Department</div>
-          <div style="color:var(--ink-2);font-weight:500;">{{ request.user.department }}</div>
+          <div style="color:#7a7570;font-size:11px;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em;">Department</div>
+          <div style="color:#1a1814;font-weight:500;">{{ request.user.department }}</div>
         </div>
         {% endif %}
       </div>
     </div>
 
     <!-- Quick links -->
-    <div class="card" style="padding:16px;">
-      <a href="{% url 'knowledge_base:dashboard' %}" class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px;">My Dashboard</a>
-      <a href="{% url 'knowledge_base:post_create' %}" class="btn btn-primary" style="width:100%;justify-content:center;">✦ Write a Post</a>
+    <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px;">
+      <a href="{% url 'knowledge_base:dashboard' %}" class="btn-secondary" style="width:100%;justify-content:center;">📊 My Dashboard</a>
+      <a href="{% url 'knowledge_base:post_create' %}" class="btn-primary" style="width:100%;justify-content:center;">✦ Write a Post</a>
     </div>
 
   </div>

@@ -2,24 +2,201 @@
 {% block title %}Sign In — ACT InnerCircle{% endblock %}
 
 {% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
 <style>
   /* Hide sidebars on auth pages */
   .sidebar-left, .sidebar-right { display: none !important; }
   .main-content { margin-left: 0 !important; margin-right: 0 !important; }
+  
   .auth-wrap {
     min-height: calc(100vh - var(--nav-h));
-    display: flex; align-items: center; justify-content: center;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
     padding: 40px 16px;
     background: linear-gradient(135deg, #FFF5F5 0%, #F4F5F7 60%, #F0F4FF 100%);
   }
+
+  /* ── AUTH CARD WITH RED BORDER ── */
   .auth-card {
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: 2.5px solid #c0392b;
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-lg);
-    padding: 40px;
-    width: 100%; max-width: 420px;
+    padding: 60px 48px;
+    width: 100%; 
+    max-width: 500px;
     animation: fadeSlide .35s ease;
+  }
+
+  /* Header Section */
+  .auth-header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  .auth-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: #c0392b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin: 0 auto 18px;
+  }
+
+  .auth-title {
+    font-family: 'Lora', serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 6px;
+    color: #1a1814;
+  }
+
+  .auth-subtitle {
+    font-size: 14px;
+    color: #7a7570;
+    font-weight: 500;
+  }
+
+  /* Form Styling */
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .form-group {
+    margin-bottom: 24px;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1814;
+    margin-bottom: 10px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid #e2ddd8;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1a1814;
+    font-family: 'DM Sans', sans-serif;
+    background: white;
+    transition: all 0.2s;
+  }
+
+  .form-control::placeholder {
+    color: #aaa;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: #c0392b;
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
+  }
+
+  /* Button - RED & ALWAYS VISIBLE */
+  .btn-signin {
+    width: 100%;
+    padding: 15px 24px;
+    background: #c0392b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: all 0.3s ease;
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .btn-signin:hover {
+    background: #a03024;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(192, 57, 43, 0.3);
+  }
+
+  .btn-signin:active {
+    transform: translateY(0);
+  }
+
+  /* Error Messages */
+  .flash-error {
+    padding: 12px 16px;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #991b1b;
+    margin-bottom: 20px;
+    font-weight: 500;
+  }
+
+  .errorlist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 12px;
+    color: #991b1b;
+  }
+
+  .errorlist li {
+    padding: 4px 0;
+  }
+
+  /* Footer Link */
+  .auth-footer {
+    text-align: center;
+    margin-top: 28px;
+    font-size: 13px;
+    color: #7a7570;
+  }
+
+  .auth-footer a {
+    color: #c0392b;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .auth-footer a:hover {
+    text-decoration: underline;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .auth-card {
+      padding: 40px 28px;
+      max-width: 100%;
+      border-width: 2px;
+    }
+
+    .auth-title {
+      font-size: 22px;
+    }
+
+    .btn-signin {
+      padding: 13px 20px;
+      font-size: 15px;
+    }
   }
 </style>
 {% endblock %}
@@ -28,43 +205,56 @@
 <div class="auth-wrap">
   <div class="auth-card">
 
-    <!-- Logo -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <div style="width:52px;height:52px;border-radius:14px;background:var(--red);
-                  display:flex;align-items:center;justify-content:center;
-                  font-size:26px;margin:0 auto 14px;">⚡</div>
-      <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px;">Welcome back</h1>
-      <p style="font-size:14px;color:var(--ink-4);">Sign in to ACT InnerCircle</p>
+    <!-- Header -->
+    <div class="auth-header">
+      <div class="auth-icon">⚡</div>
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="auth-subtitle">Sign in to ACT InnerCircle</p>
     </div>
 
-    <!-- Error -->
+    <!-- Error Message -->
     {% if form.non_field_errors %}
-    <div class="flash flash-error" style="margin-bottom:20px;">
+    <div class="flash-error">
       ✕ Invalid email or password. Please try again.
     </div>
     {% endif %}
 
-    <form method="post">
+    <!-- Form -->
+    <form method="post" class="auth-form">
       {% csrf_token %}
 
-      <div class="form-group" style="margin-bottom:16px;">
-        <label class="form-label">ACT Corporate Email</label>
+      <!-- Email Field -->
+      <div class="form-group">
+        <label class="form-label" for="id_username">ACT Corporate Email</label>
         {{ form.username }}
+        {% if form.username.errors %}
+          <ul class="errorlist">
+            {% for error in form.username.errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
       </div>
 
-      <div class="form-group" style="margin-bottom:24px;">
-        <label class="form-label">Password</label>
+      <!-- Password Field -->
+      <div class="form-group">
+        <label class="form-label" for="id_password">Password</label>
         {{ form.password }}
+        {% if form.password.errors %}
+          <ul class="errorlist">
+            {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
       </div>
 
-      <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;">
+      <!-- Sign In Button - ALWAYS VISIBLE RED -->
+      <button type="submit" class="btn-signin">
         Sign In →
       </button>
     </form>
 
-    <p style="text-align:center;margin-top:20px;font-size:14px;color:var(--ink-4);">
+    <!-- Footer Link -->
+    <p class="auth-footer">
       Don't have an account?
-      <a href="{% url 'knowledge_base:register' %}" style="color:var(--red);font-weight:500;">Join InnerCircle</a>
+      <a href="{% url 'knowledge_base:register' %}">Join InnerCircle</a>
     </p>
 
   </div>
@@ -74,11 +264,15 @@
 {% block extra_js %}
 <script>
   // Style Django's raw input widgets
-  document.querySelectorAll('input[type=text],input[type=email],input[type=password]').forEach(el => {
+  document.querySelectorAll('input[type=text], input[type=email], input[type=password]').forEach(el => {
     el.classList.add('form-control');
-    el.setAttribute('autocomplete', el.type === 'password' ? 'current-password' : 'email');
+    if (el.type === 'password') {
+      el.setAttribute('autocomplete', 'current-password');
+      el.placeholder = 'Your password';
+    } else {
+      el.setAttribute('autocomplete', 'email');
+      el.placeholder = 'yourname@actcorp.in';
+    }
   });
-  document.querySelector('input[type=email]') && (document.querySelector('input[type=email]').placeholder = 'yourname@actcorp.in');
-  document.querySelector('input[type=password]') && (document.querySelector('input[type=password]').placeholder = 'Your password');
 </script>
 {% endblock %}
