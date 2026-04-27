@@ -2,223 +2,192 @@
 {% block title %}Join ACT InnerCircle{% endblock %}
 
 {% block extra_head %}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-
 <style>
   .sidebar-left, .sidebar-right { display: none !important; }
   .main-content { margin-left: 0 !important; margin-right: 0 !important; }
 
+  /* ── Page wrapper ── */
   .auth-wrap {
-    min-height: calc(100vh - var(--nav-h));
-    display: flex; 
-    align-items: center; 
+    min-height: calc(100vh - var(--nav-height));
+    display: flex;
+    align-items: center;
     justify-content: center;
     padding: 40px 16px;
     background: linear-gradient(135deg, #FFF5F5 0%, #F4F5F7 60%, #F0F4FF 100%);
   }
 
-  /* ── AUTH CARD WITH RED BORDER ── */
+  /* ── Card ── */
   .auth-card {
-    background: var(--surface);
+    background: var(--neutral-0);
     border: 2.5px solid #c0392b;
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg);
-    padding: 60px 48px;
-    width: 100%; 
+    border-radius: 20px;
+    box-shadow: 0 10px 20px rgba(15,20,25,.12);
+    padding: 52px 48px;
+    width: 100%;
     max-width: 520px;
     animation: fadeSlide .35s ease;
   }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 
-  /* Header Section */
-  .auth-header {
-    text-align: center;
+  /* ── Progress stepper ── */
+  .stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
     margin-bottom: 36px;
   }
-
-  .auth-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
-    background: #c0392b;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    margin: 0 auto 18px;
-  }
-
-  .auth-title {
-    font-family: 'Lora', serif;
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: -0.3px;
-    margin-bottom: 6px;
-    color: #1a1814;
-  }
-
-  .auth-subtitle {
-    font-size: 14px;
-    color: #7a7570;
-    font-weight: 500;
-  }
-
-  .auth-subtitle strong {
-    color: #c0392b;
-    font-weight: 600;
-  }
-
-  /* Form Styling */
-  .auth-form {
+  .step-item {
     display: flex;
     flex-direction: column;
-    gap: 0;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    z-index: 1;
   }
-
-  .form-group {
-    margin-bottom: 20px;
-  }
-
-  .form-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: #1a1814;
-    margin-bottom: 10px;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-  }
-
-  .req {
-    color: #c0392b;
-    font-weight: 700;
-  }
-
-  .form-control {
-    width: 100%;
-    padding: 14px 16px;
-    border: 1.5px solid #e2ddd8;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #1a1814;
-    font-family: 'DM Sans', sans-serif;
+  .step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #e2ddd8;
     background: white;
-    transition: all 0.2s;
-  }
-
-  .form-control::placeholder {
-    color: #aaa;
-  }
-
-  .form-control:focus {
-    outline: none;
-    border-color: #c0392b;
-    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
-  }
-
-  /* Two column grid for names */
-  .form-row-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 20px;
-  }
-
-  .form-row-2 .form-group {
-    margin-bottom: 0;
-  }
-
-  /* Error Messages */
-  .flash-error {
-    padding: 12px 16px;
-    background: #fee2e2;
-    border: 1px solid #fecaca;
-    border-radius: 8px;
-    font-size: 13px;
-    color: #991b1b;
-    margin-bottom: 20px;
-    font-weight: 500;
-  }
-
-  .form-error {
-    display: block;
-    font-size: 12px;
-    color: #991b1b;
-    margin-top: 6px;
-    font-weight: 500;
-  }
-
-  /* Button - RED & ALWAYS VISIBLE */
-  .btn-register {
-    width: 100%;
-    padding: 15px 24px;
-    background: #c0392b;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: 0.02em;
-    transition: all 0.3s ease;
-    font-family: 'DM Sans', sans-serif;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #aaa;
+    transition: all .3s;
+  }
+  .step-item.active   .step-circle { border-color: #c0392b; background: #c0392b; color: white; }
+  .step-item.done     .step-circle { border-color: #27ae60; background: #27ae60; color: white; }
+  .step-label {
+    font-size: 11px;
+    color: #aaa;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .step-item.active .step-label { color: #c0392b; font-weight: 600; }
+  .step-item.done   .step-label { color: #27ae60; }
+  .step-connector {
+    width: 60px;
+    height: 2px;
+    background: #e2ddd8;
+    margin: 0 4px;
+    margin-bottom: 24px;
+    flex-shrink: 0;
+    transition: background .3s;
+  }
+  .step-connector.done { background: #27ae60; }
+
+  /* ── Header ── */
+  .auth-header { text-align: center; margin-bottom: 28px; }
+  .auth-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: #c0392b;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; margin: 0 auto 16px;
+  }
+  .auth-title {
+    font-family: 'Lora', serif;
+    font-size: 24px; font-weight: 700; letter-spacing: -.3px;
+    margin-bottom: 6px; color: #1a1814;
+  }
+  .auth-subtitle { font-size: 14px; color: #7a7570; font-weight: 500; }
+  .auth-subtitle strong { color: #c0392b; font-weight: 600; }
+
+  /* ── Email highlight pill ── */
+  .email-pill {
+    display: inline-block;
+    background: #fdf1f1;
+    border: 1px solid #f5c0c0;
+    color: #c0392b;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+
+  /* ── Form fields ── */
+  .auth-form { display: flex; flex-direction: column; gap: 0; }
+  .form-group { margin-bottom: 20px; }
+  .form-label {
+    display: block; font-size: 13px; font-weight: 600;
+    color: #1a1814; margin-bottom: 10px;
+    letter-spacing: .03em; text-transform: uppercase;
+  }
+  .req { color: #c0392b; font-weight: 700; }
+  .form-control {
+    width: 100%; padding: 14px 16px;
+    border: 1.5px solid #e2ddd8; border-radius: 8px;
+    font-size: 14px; color: #1a1814;
+    font-family: 'DM Sans', sans-serif; background: white;
+    transition: all .2s;
+    box-sizing: border-box;
+  }
+  .form-control:focus {
+    outline: none; border-color: #c0392b;
+    box-shadow: 0 0 0 3px rgba(192,57,43,.1);
+  }
+  .form-control.otp-input {
+    font-size: 28px; letter-spacing: 10px; text-align: center;
+    font-weight: 700; padding: 16px;
+  }
+  .form-row-2 {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-bottom: 20px;
+  }
+  .form-row-2 .form-group { margin-bottom: 0; }
+  .flash-error {
+    padding: 12px 16px; background: #fee2e2;
+    border: 1px solid #fecaca; border-radius: 8px;
+    font-size: 13px; color: #991b1b; margin-bottom: 20px; font-weight: 500;
+  }
+  .form-error {
+    display: block; font-size: 12px; color: #991b1b;
+    margin-top: 6px; font-weight: 500;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    width: 100%; padding: 15px 24px;
+    background: #c0392b; color: white; border: none;
+    border-radius: 8px; font-size: 16px; font-weight: 600;
+    cursor: pointer; letter-spacing: .02em; transition: all .3s;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; margin-top: 8px;
+  }
+  .btn-primary:hover { background: #a03024; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(192,57,43,.3); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-ghost {
+    width: 100%; padding: 11px 24px;
+    background: transparent; color: #7a7570; border: 1.5px solid #e2ddd8;
+    border-radius: 8px; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif;
     margin-top: 8px;
   }
+  .btn-ghost:hover { background: #f9f6f3; border-color: #c0392b; color: #c0392b; }
 
-  .btn-register:hover {
-    background: #a03024;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(192, 57, 43, 0.3);
-  }
+  /* ── OTP hint ── */
+  .otp-hint { font-size: 12px; color: #aaa; text-align: center; margin-top: 8px; }
+  .otp-hint .timer { font-weight: 600; color: #c0392b; }
 
-  .btn-register:active {
-    transform: translateY(0);
-  }
+  /* ── Footer link ── */
+  .auth-footer { text-align: center; margin-top: 24px; font-size: 13px; color: #7a7570; }
+  .auth-footer a { color: #c0392b; text-decoration: none; font-weight: 600; }
+  .auth-footer a:hover { text-decoration: underline; }
 
-  /* Footer Link */
-  .auth-footer {
-    text-align: center;
-    margin-top: 28px;
-    font-size: 13px;
-    color: #7a7570;
-  }
-
-  .auth-footer a {
-    color: #c0392b;
-    text-decoration: none;
-    font-weight: 600;
-  }
-
-  .auth-footer a:hover {
-    text-decoration: underline;
-  }
-
-  /* Responsive */
   @media (max-width: 640px) {
-    .auth-card {
-      padding: 40px 28px;
-      max-width: 100%;
-      border-width: 2px;
-    }
-
-    .auth-title {
-      font-size: 22px;
-    }
-
-    .form-row-2 {
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-
-    .btn-register {
-      padding: 13px 20px;
-      font-size: 15px;
-    }
+    .auth-card { padding: 36px 24px; }
+    .auth-title { font-size: 20px; }
+    .form-row-2 { grid-template-columns: 1fr; gap: 0; }
+    .step-connector { width: 36px; }
   }
 </style>
 {% endblock %}
@@ -227,21 +196,97 @@
 <div class="auth-wrap">
   <div class="auth-card">
 
-    <!-- Header -->
+    <!-- ── Progress stepper ── -->
+    <div class="stepper">
+      <div class="step-item {% if step == 'email' %}active{% elif step_number > 1 %}done{% endif %}">
+        <div class="step-circle">{% if step_number > 1 %}✓{% else %}1{% endif %}</div>
+        <span class="step-label">Email</span>
+      </div>
+      <div class="step-connector {% if step_number > 1 %}done{% endif %}"></div>
+      <div class="step-item {% if step == 'otp' %}active{% elif step_number > 2 %}done{% endif %}">
+        <div class="step-circle">{% if step_number > 2 %}✓{% else %}2{% endif %}</div>
+        <span class="step-label">Verify</span>
+      </div>
+      <div class="step-connector {% if step_number > 2 %}done{% endif %}"></div>
+      <div class="step-item {% if step == 'profile' %}active{% endif %}">
+        <div class="step-circle">3</div>
+        <span class="step-label">Details</span>
+      </div>
+    </div>
+
+    <!-- ── Header ── -->
     <div class="auth-header">
       <div class="auth-icon">⚡</div>
-      <h1 class="auth-title">Join InnerCircle</h1>
-      <p class="auth-subtitle">Only <strong>@actcorp.in</strong> email addresses are accepted</p>
+
+      {% if step == 'email' %}
+        <h1 class="auth-title">Create your Account</h1>
+        <p class="auth-subtitle">Enter your email address to get started</p>
+      {% elif step == 'otp' %}
+        <h1 class="auth-title">Check your inbox</h1>
+        <p class="auth-subtitle">We sent a 6-digit code to</p>
+        <div class="email-pill">{{ email }}</div>
+      {% else %}
+        <h1 class="auth-title">Almost there!</h1>
+        <p class="auth-subtitle">Set your password and profile details</p>
+      {% endif %}
     </div>
 
-    <!-- Non-field errors -->
+    <!-- ── Non-field errors ── -->
     {% if form.non_field_errors %}
-    <div class="flash-error">
-      ✕ {{ form.non_field_errors.0 }}
-    </div>
+    <div class="flash-error">✕ {{ form.non_field_errors.0 }}</div>
     {% endif %}
 
-    <!-- Form -->
+    <!-- ════════════════════════════════
+         STEP 1 — Email
+    ════════════════════════════════ -->
+    {% if step == 'email' %}
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Email Address <span class="req">*</span></label>
+        <input type="email" name="email" required class="form-control"
+               placeholder="example@gmail.com"
+               value="{{ form.email.value|default:'' }}"
+               autocomplete="email" autofocus>
+        {% if form.email.errors %}
+          <span class="form-error">{{ form.email.errors.0 }}</span>
+        {% endif %}
+      </div>
+      <button type="submit" class="btn-primary">Send verification code →</button>
+    </form>
+
+    <!-- ════════════════════════════════
+         STEP 2 — OTP
+    ════════════════════════════════ -->
+    {% elif step == 'otp' %}
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" style="text-align:center;">Verification code <span class="req">*</span></label>
+        <input type="text" name="otp_code" required
+               class="form-control otp-input"
+               placeholder="• • • • • •"
+               maxlength="6" inputmode="numeric" pattern="[0-9]{6}"
+               autocomplete="one-time-code" autofocus>
+        {% if form.otp_code.errors %}
+          <span class="form-error" style="text-align:center;display:block;">{{ form.otp_code.errors.0 }}</span>
+        {% endif %}
+      </div>
+      <p class="otp-hint">Code expires in <span class="timer" id="countdown">10:00</span></p>
+      <button type="submit" class="btn-primary">Verify code →</button>
+    </form>
+
+    <!-- Resend OTP -->
+    <form method="post" style="margin-top:0;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="resend">
+      <button type="submit" class="btn-ghost">↻ Resend code</button>
+    </form>
+
+    <!-- ════════════════════════════════
+         STEP 3 — Profile + Password
+    ════════════════════════════════ -->
+    {% elif step == 'profile' %}
     <form method="post" class="auth-form">
       {% csrf_token %}
 
@@ -249,56 +294,59 @@
       <div class="form-row-2">
         <div class="form-group">
           <label class="form-label">First Name <span class="req">*</span></label>
-          <input type="text" name="first_name" required class="form-control" placeholder="Arjun"
+          <input type="text" name="first_name" required class="form-control"
+                 placeholder="Arjun"
                  value="{{ form.first_name.value|default:'' }}">
-          {% if form.first_name.errors %}<span class="form-error">{{ form.first_name.errors.0 }}</span>{% endif %}
+          {% if form.first_name.errors %}
+            <span class="form-error">{{ form.first_name.errors.0 }}</span>
+          {% endif %}
         </div>
         <div class="form-group">
           <label class="form-label">Last Name <span class="req">*</span></label>
-          <input type="text" name="last_name" required class="form-control" placeholder="Sharma"
+          <input type="text" name="last_name" required class="form-control"
+                 placeholder="Sharma"
                  value="{{ form.last_name.value|default:'' }}">
-          {% if form.last_name.errors %}<span class="form-error">{{ form.last_name.errors.0 }}</span>{% endif %}
+          {% if form.last_name.errors %}
+            <span class="form-error">{{ form.last_name.errors.0 }}</span>
+          {% endif %}
         </div>
-      </div>
-
-      <!-- Email -->
-      <div class="form-group">
-        <label class="form-label">ACT Corporate Email <span class="req">*</span></label>
-        <input type="email" name="email" required class="form-control" placeholder="yourname@actcorp.in"
-               value="{{ form.email.value|default:'' }}" autocomplete="email">
-        {% if form.email.errors %}
-          <span class="form-error">{{ form.email.errors.0 }}</span>
-        {% endif %}
       </div>
 
       <!-- Department -->
       <div class="form-group">
         <label class="form-label">Department</label>
-        <input type="text" name="department" class="form-control" placeholder="e.g. Network Operations, Customer Experience"
+        <input type="text" name="department" class="form-control"
+               placeholder="e.g. Network Operations, Customer Experience"
                value="{{ form.department.value|default:'' }}">
       </div>
 
       <!-- Password -->
       <div class="form-group">
         <label class="form-label">Password <span class="req">*</span></label>
-        <input type="password" name="password1" required class="form-control" placeholder="Create a strong password" autocomplete="new-password">
-        {% if form.password1.errors %}<span class="form-error">{{ form.password1.errors.0 }}</span>{% endif %}
+        <input type="password" name="password1" required class="form-control"
+               placeholder="Create a strong password"
+               autocomplete="new-password">
+        {% if form.password1.errors %}
+          <span class="form-error">{{ form.password1.errors.0 }}</span>
+        {% endif %}
       </div>
 
       <!-- Confirm Password -->
       <div class="form-group">
         <label class="form-label">Confirm Password <span class="req">*</span></label>
-        <input type="password" name="password2" required class="form-control" placeholder="Repeat your password" autocomplete="new-password">
-        {% if form.password2.errors %}<span class="form-error">{{ form.password2.errors.0 }}</span>{% endif %}
+        <input type="password" name="password2" required class="form-control"
+               placeholder="Repeat your password"
+               autocomplete="new-password">
+        {% if form.password2.errors %}
+          <span class="form-error">{{ form.password2.errors.0 }}</span>
+        {% endif %}
       </div>
 
-      <!-- Register Button - ALWAYS VISIBLE RED -->
-      <button type="submit" class="btn-register">
-        Create My Account →
-      </button>
+      <button type="submit" class="btn-primary">Create my account →</button>
     </form>
+    {% endif %}
 
-    <!-- Footer Link -->
+    <!-- ── Footer ── -->
     <p class="auth-footer">
       Already have an account?
       <a href="{% url 'knowledge_base:login' %}">Sign in</a>
@@ -306,4 +354,22 @@
 
   </div>
 </div>
+
+{% if step == 'otp' %}
+<script>
+  /* 10-minute countdown for OTP */
+  (function () {
+    var total = 600;
+    var el    = document.getElementById('countdown');
+    if (!el) return;
+    var t = setInterval(function () {
+      total--;
+      if (total <= 0) { clearInterval(t); el.textContent = 'Expired'; el.style.color = '#999'; return; }
+      var m = Math.floor(total / 60);
+      var s = total % 60;
+      el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    }, 1000);
+  })();
+</script>
+{% endif %}
 {% endblock %}

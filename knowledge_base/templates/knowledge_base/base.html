@@ -145,10 +145,13 @@
 
     .divider { height: 1px; background: var(--neutral-200); margin: 8px 0; }
 
+    /* ─── MODIFIED MAIN CONTENT ─── */
     .main-content { 
       flex: 1; 
       margin-left: var(--sidebar-width); 
-      padding: var(--spacing-xl) var(--spacing-lg); 
+      padding: var(--spacing-xl) var(--spacing-lg);
+      /* CRITICAL: Must be visible to allow Quill dropdowns to escape */
+      overflow: visible !important; 
     }
 
     /* FLASH MESSAGES */
@@ -163,6 +166,30 @@
       .main-content { margin-left: 0; }
       .hamburger { display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; }
       .hamburger span { width: 24px; height: 2px; background: #333; }
+    }
+
+    /* ─── QUILL DROPDOWN FIXES (AS DIRECTED BY CLAUDE) ─── */
+    /* Ensure the pickers (font/size/color) stay above the navbar (z-index 100) */
+    .ql-snow .ql-picker-options {
+      z-index: 10000 !important;
+      position: absolute !important;
+      box-shadow: var(--shadow-lg) !important;
+    }
+
+    .ql-color-picker .ql-picker-options,
+    .ql-background .ql-picker-options {
+      z-index: 10000 !important;
+      position: absolute !important;
+    }
+
+    .ql-toolbar.ql-snow {
+      position: relative;
+      z-index: 200;
+      overflow: visible !important;
+    }
+
+    .ql-container.ql-snow {
+      overflow: visible !important;
     }
   </style>
   {% block extra_head %}{% endblock %}

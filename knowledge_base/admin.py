@@ -1,9 +1,7 @@
-# knowledge_base/admin.py
-
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils import timezone
-from .models import ActUser, Post, Comment, Category, PostUpvote
+from .models import ActUser, Post, Comment, Category, PostUpvote, OTPVerification
 
 
 # ─────────────────────────────────────────
@@ -59,14 +57,14 @@ class CommentInline(admin.TabularInline):
 # ─────────────────────────────────────────
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    # Fixed: list_display now refers to internal methods get_upvote_count and get_comment_count
     list_display   = ('title', 'author', 'category', 'status', 'get_upvote_count', 'get_comment_count', 'created_at')
     list_filter    = ('status', 'category', 'created_at')
     search_fields  = ('title', 'body', 'author__email', 'author__first_name')
     prepopulated_fields = {'slug': ('title',)}
-    readonly_fields = ('created_at', 'updated_at', 'published_at', 'ai_summary')
     
-    # Include the Upvote inline so you can see who liked what
+    # REMOVED: 'ai_summary' from readonly_fields
+    readonly_fields = ('created_at', 'updated_at', 'published_at')
+    
     inlines = [PostUpvoteInline, CommentInline]
 
     fieldsets = (
@@ -76,19 +74,13 @@ class PostAdmin(admin.ModelAdmin):
         ('Authorship & Workflow', {
             'fields': ('author', 'status', 'rejection_reason')
         }),
-        ('AI Intelligence', {
-            'fields': ('ai_summary',),
-            'classes': ('collapse',)
-        }),
-        # FIXED: Removed 'upvotes' field from here as it cannot be shown in fieldsets 
-        # when using a 'through' model. Managed via Inline above.
+        # REMOVED: 'AI Intelligence' section entirely as ai_summary is gone
         ('Timestamps', {
             'fields': ('created_at', 'updated_at', 'published_at'),
             'classes': ('collapse',)
         }),
     )
 
-    # Custom methods to resolve upvote and comment counts in list view
     def get_upvote_count(self, obj):
         return obj.upvotes.count()
     get_upvote_count.short_description = 'Upvotes'
@@ -97,7 +89,6 @@ class PostAdmin(admin.ModelAdmin):
         return obj.comments.count()
     get_comment_count.short_description = 'Comments'
 
-    # ── Custom Admin Actions ──────────────────────────────────
     actions = ['approve_posts', 'reject_posts']
 
     @admin.action(description='✅ Approve and publish selected posts')
@@ -130,3 +121,14 @@ class CommentAdmin(admin.ModelAdmin):
     def approve_comments(self, request, queryset):
         updated = queryset.update(is_approved=True)
         self.message_user(request, f'{updated} comment(s) approved.')
+
+
+# ─────────────────────────────────────────
+# OTP VERIFICATION ADMIN (New)
+# ─────────────────────────────────────────
+@admin.register(OTPVerification)
+class OTPVerificationAdmin(admin.ModelAdmin):
+    list_display = ('email', 'otp_code', 'created_at', 'is_used')
+    list_filter  = ('is_used', 'created_at')
+    search_fields = ('email', 'otp_code')
+    readonly_fields = ('created_at',)

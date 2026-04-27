@@ -1,3 +1,5 @@
+import random
+import string
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -6,16 +8,15 @@ from django.utils import timezone
 from taggit.managers import TaggableManager
 
 
-# ─────────────────────────────────────────
-# VALIDATOR: Enforces @actcorp.in emails
-# ─────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
+# DUMMY VALIDATOR (Required for legacy migrations)
+# ──────────────────────────────────────────────────────────────────────────────
 def validate_act_email(value):
-    if not value.endswith('@actcorp.in'):
-        raise ValidationError(
-            f'Registration is restricted to @actcorp.in email addresses.'
-        )
-
-
+    """
+    DEPRECATED: This function is kept only to prevent AttributeError 
+    during older migrations that reference it.
+    """
+    return value
 # ─────────────────────────────────────────
 # CUSTOM USER MANAGER
 # ─────────────────────────────────────────
@@ -23,10 +24,13 @@ class ActUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError('An email address is required.')
+        
         email = self.normalize_email(email)
-        validate_act_email(email)
+        # Email domain validation removed to allow general registration
+        
         extra_fields.setdefault('is_staff', False)
         extra_fields.setdefault('is_superuser', False)
+        
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -49,7 +53,9 @@ class ActUser(AbstractUser):
         ADMIN    = 'ADMIN',    'Admin'
 
     username = None
-    email = models.EmailField(unique=True, validators=[validate_act_email])
+    # Validator removed to allow any email domain
+    email = models.EmailField(unique=True)
+    
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.EMPLOYEE)
     is_admin_user = models.BooleanField(default=False)
     department = models.CharField(max_length=100, blank=True)
@@ -137,9 +143,9 @@ class Post(models.Model):
         default=Status.DRAFT, 
         db_index=True
     )
-    views_count = models.PositiveIntegerField(default=0) # <--- ADDED FIELD
+    views_count = models.PositiveIntegerField(default=0)
     rejection_reason = models.TextField(blank=True)
-    ai_summary = models.TextField(blank=True, null=True)
+    
     tags = TaggableManager(blank=True)
 
     # Timestamps
@@ -152,7 +158,7 @@ class Post(models.Model):
         indexes = [
             models.Index(fields=['-published_at']),
             models.Index(fields=['status', '-created_at']),
-            models.Index(fields=['views_count']), # Index added for dashboard performance
+            models.Index(fields=['views_count']),
         ]
 
     def __str__(self):
@@ -166,20 +172,11 @@ class Post(models.Model):
 
     @classmethod
     def search(cls, query, category=None):
-        """
-        Search published posts by title and body.
-        Optional filter by category slug.
-        """
         qs = cls.objects.filter(status=cls.Status.PUBLISHED)
-        
         if query:
-            qs = qs.filter(
-                Q(title__icontains=query) | Q(body__icontains=query)
-            )
-        
+            qs = qs.filter(Q(title__icontains=query) | Q(body__icontains=query))
         if category:
             qs = qs.filter(category__slug=category)
-        
         return qs.order_by('-published_at')
 
 
@@ -225,3 +222,35 @@ class Comment(models.Model):
 
     def get_author_name(self):
         return self.author.get_full_name()
+
+
+# ─────────────────────────────────────────
+# OTP VERIFICATION MODEL
+# ─────────────────────────────────────────
+class OTPVerification(models.Model):
+    """
+    Stores a short-lived OTP for email verification during registration.
+    """
+    email      = models.EmailField(unique=True)
+    otp_code   = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used    = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = 'OTP Verification'
+
+    def __str__(self):
+        return f"OTP for {self.email}"
+
+    @classmethod
+    def generate_for(cls, email):
+        code = ''.join(random.choices(string.digits, k=6))
+        cls.objects.update_or_create(
+            email=email,
+            defaults={'otp_code': code, 'is_used': False, 'created_at': timezone.now()},
+        )
+        return code
+
+    def is_valid(self):
+        age = timezone.now() - self.created_at
+        return (not self.is_used) and (age.total_seconds() < 600)

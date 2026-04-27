@@ -23,7 +23,7 @@ urlpatterns = [
     # ─────────────────────────────────────────────────────
     path('manage/create/', views.post_create, name='post_create'),
     path('manage/edit/<slug:slug>/', views.post_edit, name='post_edit'),
-    path('manage/delete/<slug:slug>/', views.post_delete_author, name='post_delete_author'),  # NEW
+    path('manage/delete/<slug:slug>/', views.post_delete_author, name='post_delete_author'),
     path('manage/submit/<slug:slug>/', views.post_submit, name='post_submit'),
     
     # ─────────────────────────────────────────────────────
@@ -44,9 +44,12 @@ urlpatterns = [
     path('post/<slug:slug>/comment/', views.add_comment, name='add_comment'),
 
     # ─────────────────────────────────────────────────────
-    # AUTHENTICATION & PROFILE
+    # AUTHENTICATION & PROFILE (Updated Registration Flow)
     # ─────────────────────────────────────────────────────
-    path('register/', views.register, name='register'),
+    path('register/',               views.register_email,   name='register'),
+    path('register/verify-otp/',    views.register_otp,     name='register_otp'),
+    path('register/profile/',       views.register_profile, name='register_profile'),
+    
     path('login/', views.user_login, name='login'),
     path('logout/', views.user_logout, name='logout'),
     path('profile/', views.profile, name='profile'),
